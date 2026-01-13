@@ -66,8 +66,10 @@ type ScrapeConfig struct {
 	// ProxyURL is the proxy URL.
 	ProxyURL string `yaml:"proxy_url,omitempty"`
 
-	// Service discovery configurations will be added in Phase 2.
-	// - KubernetesSDConfigs
+	// KubernetesSDConfigs defines Kubernetes service discovery configurations.
+	KubernetesSDConfigs []*KubernetesSD `yaml:"kubernetes_sd_configs,omitempty"`
+
+	// Service discovery configurations to be added:
 	// - ConsulSDConfigs
 	// - EC2SDConfigs
 	// - FileSDConfigs
@@ -140,6 +142,12 @@ func (s *ScrapeConfig) WithStaticTargets(targets ...string) *ScrapeConfig {
 	s.StaticConfigs = append(s.StaticConfigs, &StaticConfig{
 		Targets: targets,
 	})
+	return s
+}
+
+// WithKubernetesSD adds a Kubernetes service discovery configuration.
+func (s *ScrapeConfig) WithKubernetesSD(sd *KubernetesSD) *ScrapeConfig {
+	s.KubernetesSDConfigs = append(s.KubernetesSDConfigs, sd)
 	return s
 }
 
