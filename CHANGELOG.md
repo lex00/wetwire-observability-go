@@ -8,11 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Initial repository setup
-- CI/CD workflows
-- Project documentation
+
+#### Phase 1: Foundation (Complete)
 - Prometheus Duration type with serialization (30s, 5m, 1h30m format)
 - Prometheus GlobalConfig for scrape/evaluation intervals
 - Prometheus ScrapeConfig for job configuration
 - Prometheus StaticConfig for static target groups
 - Supporting types: BasicAuth, TLSConfig, RelabelConfig
+- YAML serialization with Serialize() and SerializeToFile()
+- AST-based resource discovery (internal/discover package)
+- CLI commands: build, lint, list
+- Table and JSON output formats for list command
+
+#### Infrastructure
+- Initial repository setup
+- CI/CD workflows (build, test, release)
+- Project documentation (README, CLAUDE.md, CHANGELOG)
