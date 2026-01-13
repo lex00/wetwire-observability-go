@@ -50,3 +50,31 @@ func PagerDutyReceiverFromFile(name, keyFile string) *Receiver {
 		NewPagerDutyConfig().WithRoutingKeyFile(keyFile),
 	)
 }
+
+// EmailReceiver creates a Receiver with a single email configuration.
+func EmailReceiver(name, to string) *Receiver {
+	return NewReceiver(name).WithEmailConfigs(
+		NewEmailConfig().WithTo(to),
+	)
+}
+
+// WebhookReceiver creates a Receiver with a single webhook configuration.
+func WebhookReceiver(name, url string) *Receiver {
+	return NewReceiver(name).WithWebhookConfigs(
+		NewWebhookConfig().WithURL(url),
+	)
+}
+
+// OpsGenieReceiver creates a Receiver with a single OpsGenie configuration.
+func OpsGenieReceiver(name string, apiKey Secret) *Receiver {
+	return NewReceiver(name).WithOpsGenieConfigs(
+		NewOpsGenieConfig().WithAPIKey(apiKey),
+	)
+}
+
+// OpsGenieReceiverFromFile creates a Receiver with OpsGenie config reading key from file.
+func OpsGenieReceiverFromFile(name, keyFile string) *Receiver {
+	return NewReceiver(name).WithOpsGenieConfigs(
+		NewOpsGenieConfig().WithAPIKeyFile(keyFile),
+	)
+}

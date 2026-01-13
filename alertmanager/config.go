@@ -133,27 +133,6 @@ type Receiver struct {
 	OpsGenieConfigs []*OpsGenieConfig `yaml:"opsgenie_configs,omitempty"`
 }
 
-// EmailConfig configures email notifications.
-// Placeholder - will be expanded in issue #29.
-type EmailConfig struct {
-	SendResolved *bool  `yaml:"send_resolved,omitempty"`
-	To           string `yaml:"to,omitempty"`
-}
-
-// WebhookConfig configures webhook notifications.
-// Placeholder - will be expanded in issue #29.
-type WebhookConfig struct {
-	SendResolved *bool  `yaml:"send_resolved,omitempty"`
-	URL          string `yaml:"url,omitempty"`
-}
-
-// OpsGenieConfig configures OpsGenie notifications.
-// Placeholder - will be expanded in issue #29.
-type OpsGenieConfig struct {
-	SendResolved *bool  `yaml:"send_resolved,omitempty"`
-	APIKey       Secret `yaml:"api_key,omitempty"`
-}
-
 // InhibitRule defines a rule for muting alerts.
 // Placeholder - will be expanded later.
 type InhibitRule struct {
