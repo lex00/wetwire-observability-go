@@ -65,8 +65,7 @@ type AlertmanagerConfig struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 }
 
-// RemoteWriteConfig configures remote write.
-// Placeholder - will be fully implemented in Phase 2.
+// RemoteWriteConfig configures remote write for long-term storage.
 type RemoteWriteConfig struct {
 	// URL specifies the endpoint to send samples to.
 	URL string `yaml:"url"`
@@ -77,12 +76,41 @@ type RemoteWriteConfig struct {
 	// RemoteTimeout is the timeout for requests to the remote write endpoint.
 	RemoteTimeout Duration `yaml:"remote_timeout,omitempty"`
 
+	// Headers are custom HTTP headers to send with requests.
+	Headers map[string]string `yaml:"headers,omitempty"`
+
 	// WriteRelabelConfigs is the list of relabel configurations for remote write.
 	WriteRelabelConfigs []*RelabelConfig `yaml:"write_relabel_configs,omitempty"`
+
+	// TLSConfig configures TLS settings for the connection.
+	TLSConfig *TLSConfig `yaml:"tls_config,omitempty"`
+
+	// BasicAuth configures basic authentication.
+	BasicAuth *BasicAuth `yaml:"basic_auth,omitempty"`
+
+	// BearerToken is the bearer token to use for authentication.
+	BearerToken Secret `yaml:"bearer_token,omitempty"`
+
+	// BearerTokenFile is the path to a file containing the bearer token.
+	BearerTokenFile string `yaml:"bearer_token_file,omitempty"`
+
+	// ProxyURL is the URL of a proxy to use for requests.
+	ProxyURL string `yaml:"proxy_url,omitempty"`
+
+	// QueueConfig configures the remote write queue for batching and buffering.
+	QueueConfig *QueueConfig `yaml:"queue_config,omitempty"`
+
+	// MetadataConfig configures sending of metric metadata.
+	MetadataConfig *MetadataConfig `yaml:"metadata_config,omitempty"`
+
+	// SendExemplars enables sending of exemplars.
+	SendExemplars bool `yaml:"send_exemplars,omitempty"`
+
+	// SendNativeHistograms enables sending of native histograms.
+	SendNativeHistograms bool `yaml:"send_native_histograms,omitempty"`
 }
 
-// RemoteReadConfig configures remote read.
-// Placeholder - will be fully implemented in Phase 2.
+// RemoteReadConfig configures remote read for long-term storage queries.
 type RemoteReadConfig struct {
 	// URL specifies the endpoint to read samples from.
 	URL string `yaml:"url"`
@@ -93,8 +121,32 @@ type RemoteReadConfig struct {
 	// RemoteTimeout is the timeout for requests to the remote read endpoint.
 	RemoteTimeout Duration `yaml:"remote_timeout,omitempty"`
 
+	// Headers are custom HTTP headers to send with requests.
+	Headers map[string]string `yaml:"headers,omitempty"`
+
 	// ReadRecent determines if remote read should only return data from the recent time range.
 	ReadRecent bool `yaml:"read_recent,omitempty"`
+
+	// TLSConfig configures TLS settings for the connection.
+	TLSConfig *TLSConfig `yaml:"tls_config,omitempty"`
+
+	// BasicAuth configures basic authentication.
+	BasicAuth *BasicAuth `yaml:"basic_auth,omitempty"`
+
+	// BearerToken is the bearer token to use for authentication.
+	BearerToken Secret `yaml:"bearer_token,omitempty"`
+
+	// BearerTokenFile is the path to a file containing the bearer token.
+	BearerTokenFile string `yaml:"bearer_token_file,omitempty"`
+
+	// ProxyURL is the URL of a proxy to use for requests.
+	ProxyURL string `yaml:"proxy_url,omitempty"`
+
+	// RequiredMatchers specifies label matchers that must be present in all queries.
+	RequiredMatchers map[string]string `yaml:"required_matchers,omitempty"`
+
+	// FilterExternalLabels controls whether external labels are filtered during read.
+	FilterExternalLabels bool `yaml:"filter_external_labels,omitempty"`
 }
 
 // RelabelConfig configures target relabeling.
