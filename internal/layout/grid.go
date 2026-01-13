@@ -129,6 +129,18 @@ func getPanelGridPos(panel any) *grafana.GridPos {
 		return &p.GridPos
 	case *grafana.TablePanel:
 		return &p.GridPos
+	case *grafana.GaugePanel:
+		return &p.GridPos
+	case *grafana.BarGaugePanel:
+		return &p.GridPos
+	case *grafana.PieChartPanel:
+		return &p.GridPos
+	case *grafana.LogsPanel:
+		return &p.GridPos
+	case *grafana.TextPanel:
+		return &p.GridPos
+	case *grafana.HeatmapPanel:
+		return &p.GridPos
 	default:
 		return nil
 	}
@@ -142,6 +154,18 @@ func setPanelPosition(panel any, x, y, w, h int) {
 	case *grafana.StatPanel:
 		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
 	case *grafana.TablePanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.GaugePanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.BarGaugePanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.PieChartPanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.LogsPanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.TextPanel:
+		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
+	case *grafana.HeatmapPanel:
 		p.GridPos = grafana.GridPos{X: x, Y: y, W: w, H: h}
 	}
 }
