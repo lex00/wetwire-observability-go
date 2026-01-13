@@ -11,3 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Initial repository setup
 - CI/CD workflows
 - Project documentation
+- Prometheus Duration type with serialization (30s, 5m, 1h30m format)
+- Prometheus GlobalConfig for scrape/evaluation intervals
+- Prometheus ScrapeConfig for job configuration
+- Prometheus StaticConfig for static target groups
+- Supporting types: BasicAuth, TLSConfig, RelabelConfig
