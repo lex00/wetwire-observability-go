@@ -14,6 +14,7 @@ import (
 	"github.com/lex00/wetwire-observability-go/alertmanager"
 	"github.com/lex00/wetwire-observability-go/internal/discover"
 	"github.com/lex00/wetwire-observability-go/prometheus"
+	"github.com/lex00/wetwire-observability-go/rules"
 )
 
 // buildCmd handles the build command
@@ -88,6 +89,21 @@ func buildCmd(args []string) int {
 	if len(result.AlertmanagerConfigs) > 0 {
 		if err := buildAlertmanagerConfigs(srcDir, result.AlertmanagerConfigs, *outputDir, *mode); err != nil {
 			fmt.Fprintf(os.Stderr, "Error building alertmanager configs: %v\n", err)
+			return 1
+		}
+	}
+
+	// Build rules files from RulesFile or RuleGroup resources
+	if len(result.RulesFiles) > 0 {
+		if err := buildRulesFiles(srcDir, result.RulesFiles, *outputDir, *mode); err != nil {
+			fmt.Fprintf(os.Stderr, "Error building rules files: %v\n", err)
+			return 1
+		}
+	}
+
+	if len(result.RuleGroups) > 0 {
+		if err := buildRuleGroups(srcDir, result.RuleGroups, *outputDir, *mode); err != nil {
+			fmt.Fprintf(os.Stderr, "Error building rule groups: %v\n", err)
 			return 1
 		}
 	}
@@ -351,6 +367,260 @@ func createMinimalAlertmanagerConfig(ref *discover.ResourceRef) *alertmanager.Al
 		},
 		Receivers: []*alertmanager.Receiver{
 			{Name: "default"},
+		},
+	}
+}
+
+// buildRulesFiles loads and serializes RulesFile resources
+func buildRulesFiles(srcDir string, refs []*discover.ResourceRef, outputDir, mode string) error {
+	// Create rules output directory
+	rulesDir := filepath.Join(outputDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		return fmt.Errorf("creating rules directory: %w", err)
+	}
+
+	for _, ref := range refs {
+		fmt.Printf("Processing %s.%s from %s:%d\n", ref.Package, ref.Name, filepath.Base(ref.FilePath), ref.Line)
+
+		// Load the config by executing the package
+		rulesFile, err := loadRulesFile(srcDir, ref)
+		if err != nil {
+			fmt.Printf("  Warning: could not load rules file: %v\n", err)
+			continue
+		}
+
+		// Generate output filename
+		outputFile := filepath.Join(rulesDir, fmt.Sprintf("%s.yml", strings.ToLower(ref.Name)))
+
+		// Serialize to file
+		if err := rulesFile.SerializeToFile(outputFile); err != nil {
+			return fmt.Errorf("serializing %s: %w", ref.Name, err)
+		}
+
+		fmt.Printf("  Generated %s\n", outputFile)
+	}
+
+	return nil
+}
+
+// loadRulesFile loads a RulesFile by building and running the package
+func loadRulesFile(srcDir string, ref *discover.ResourceRef) (*rules.RulesFile, error) {
+	// Get the package path
+	pkgDir := filepath.Dir(ref.FilePath)
+	pkg, err := build.ImportDir(pkgDir, build.FindOnly)
+	if err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	// Create a temporary program to load and output the config
+	tmpDir, err := os.MkdirTemp("", "wetwire-build-*")
+	if err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Write the helper program
+	helperCode := fmt.Sprintf(`package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	target %q
+)
+
+func main() {
+	data, err := json.Marshal(target.%s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %%v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(string(data))
+}
+`, pkg.ImportPath, ref.Name)
+
+	helperPath := filepath.Join(tmpDir, "main.go")
+	if err := os.WriteFile(helperPath, []byte(helperCode), 0644); err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	// Initialize go.mod for the helper
+	modPath := filepath.Join(tmpDir, "go.mod")
+	modContent := fmt.Sprintf(`module helper
+
+go 1.23
+
+require %s v0.0.0
+
+replace %s => %s
+`, pkg.ImportPath, pkg.ImportPath, pkgDir)
+	if err := os.WriteFile(modPath, []byte(modContent), 0644); err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	// Run go mod tidy
+	tidyCmd := exec.Command("go", "mod", "tidy")
+	tidyCmd.Dir = tmpDir
+	if err := tidyCmd.Run(); err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	// Build and run the helper
+	runCmd := exec.Command("go", "run", "main.go")
+	runCmd.Dir = tmpDir
+	output, err := runCmd.Output()
+	if err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	// Parse the output
+	var rulesFile rules.RulesFile
+	if err := json.Unmarshal(output, &rulesFile); err != nil {
+		return createMinimalRulesFile(ref), nil
+	}
+
+	return &rulesFile, nil
+}
+
+// createMinimalRulesFile creates a minimal placeholder rules file
+func createMinimalRulesFile(ref *discover.ResourceRef) *rules.RulesFile {
+	return &rules.RulesFile{
+		Groups: []*rules.RuleGroup{
+			{
+				Name: ref.Name,
+				Rules: []any{
+					&rules.AlertingRule{
+						Alert: "Placeholder",
+						Expr:  "up == 0",
+					},
+				},
+			},
+		},
+	}
+}
+
+// buildRuleGroups loads and serializes individual RuleGroup resources
+func buildRuleGroups(srcDir string, refs []*discover.ResourceRef, outputDir, mode string) error {
+	// Create rules output directory
+	rulesDir := filepath.Join(outputDir, "rules")
+	if err := os.MkdirAll(rulesDir, 0755); err != nil {
+		return fmt.Errorf("creating rules directory: %w", err)
+	}
+
+	for _, ref := range refs {
+		fmt.Printf("Processing %s.%s from %s:%d\n", ref.Package, ref.Name, filepath.Base(ref.FilePath), ref.Line)
+
+		// Load the config by executing the package
+		ruleGroup, err := loadRuleGroup(srcDir, ref)
+		if err != nil {
+			fmt.Printf("  Warning: could not load rule group: %v\n", err)
+			continue
+		}
+
+		// Generate output filename
+		outputFile := filepath.Join(rulesDir, fmt.Sprintf("%s.yml", strings.ToLower(ref.Name)))
+
+		// Serialize to file (wraps in RulesFile)
+		if err := ruleGroup.SerializeToFile(outputFile); err != nil {
+			return fmt.Errorf("serializing %s: %w", ref.Name, err)
+		}
+
+		fmt.Printf("  Generated %s\n", outputFile)
+	}
+
+	return nil
+}
+
+// loadRuleGroup loads a RuleGroup by building and running the package
+func loadRuleGroup(srcDir string, ref *discover.ResourceRef) (*rules.RuleGroup, error) {
+	// Get the package path
+	pkgDir := filepath.Dir(ref.FilePath)
+	pkg, err := build.ImportDir(pkgDir, build.FindOnly)
+	if err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	// Create a temporary program to load and output the config
+	tmpDir, err := os.MkdirTemp("", "wetwire-build-*")
+	if err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Write the helper program
+	helperCode := fmt.Sprintf(`package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	target %q
+)
+
+func main() {
+	data, err := json.Marshal(target.%s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %%v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(string(data))
+}
+`, pkg.ImportPath, ref.Name)
+
+	helperPath := filepath.Join(tmpDir, "main.go")
+	if err := os.WriteFile(helperPath, []byte(helperCode), 0644); err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	// Initialize go.mod for the helper
+	modPath := filepath.Join(tmpDir, "go.mod")
+	modContent := fmt.Sprintf(`module helper
+
+go 1.23
+
+require %s v0.0.0
+
+replace %s => %s
+`, pkg.ImportPath, pkg.ImportPath, pkgDir)
+	if err := os.WriteFile(modPath, []byte(modContent), 0644); err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	// Run go mod tidy
+	tidyCmd := exec.Command("go", "mod", "tidy")
+	tidyCmd.Dir = tmpDir
+	if err := tidyCmd.Run(); err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	// Build and run the helper
+	runCmd := exec.Command("go", "run", "main.go")
+	runCmd.Dir = tmpDir
+	output, err := runCmd.Output()
+	if err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	// Parse the output
+	var ruleGroup rules.RuleGroup
+	if err := json.Unmarshal(output, &ruleGroup); err != nil {
+		return createMinimalRuleGroup(ref), nil
+	}
+
+	return &ruleGroup, nil
+}
+
+// createMinimalRuleGroup creates a minimal placeholder rule group
+func createMinimalRuleGroup(ref *discover.ResourceRef) *rules.RuleGroup {
+	return &rules.RuleGroup{
+		Name: ref.Name,
+		Rules: []any{
+			&rules.AlertingRule{
+				Alert: "Placeholder",
+				Expr:  "up == 0",
+			},
 		},
 	}
 }

@@ -36,6 +36,14 @@ type DiscoveryResult struct {
 	StaticConfigs []*ResourceRef `json:"static_configs,omitempty"`
 	// AlertmanagerConfigs are discovered Alertmanager configuration resources.
 	AlertmanagerConfigs []*ResourceRef `json:"alertmanager_configs,omitempty"`
+	// RulesFiles are discovered rule file resources.
+	RulesFiles []*ResourceRef `json:"rules_files,omitempty"`
+	// RuleGroups are discovered rule group resources.
+	RuleGroups []*ResourceRef `json:"rule_groups,omitempty"`
+	// AlertingRules are discovered alerting rule resources.
+	AlertingRules []*ResourceRef `json:"alerting_rules,omitempty"`
+	// RecordingRules are discovered recording rule resources.
+	RecordingRules []*ResourceRef `json:"recording_rules,omitempty"`
 	// Errors encountered during discovery (non-fatal).
 	Errors []string `json:"errors,omitempty"`
 }
@@ -49,6 +57,11 @@ var observabilityTypes = map[string]bool{
 	"StaticConfig":     true,
 	// Alertmanager types
 	"AlertmanagerConfig": true,
+	// Rules types
+	"RulesFile":     true,
+	"RuleGroup":     true,
+	"AlertingRule":  true,
+	"RecordingRule": true,
 }
 
 // normalizeTypeName extracts the simple type name from a potentially qualified type.
@@ -105,6 +118,14 @@ func Discover(dir string) (*DiscoveryResult, error) {
 				result.StaticConfigs = append(result.StaticConfigs, ref)
 			case "AlertmanagerConfig":
 				result.AlertmanagerConfigs = append(result.AlertmanagerConfigs, ref)
+			case "RulesFile":
+				result.RulesFiles = append(result.RulesFiles, ref)
+			case "RuleGroup":
+				result.RuleGroups = append(result.RuleGroups, ref)
+			case "AlertingRule":
+				result.AlertingRules = append(result.AlertingRules, ref)
+			case "RecordingRule":
+				result.RecordingRules = append(result.RecordingRules, ref)
 			}
 		}
 		result.Errors = append(result.Errors, errs...)
@@ -238,7 +259,9 @@ func inferTypeFromValue(expr ast.Expr) string {
 func (r *DiscoveryResult) TotalCount() int {
 	return len(r.PrometheusConfigs) + len(r.ScrapeConfigs) +
 		len(r.GlobalConfigs) + len(r.StaticConfigs) +
-		len(r.AlertmanagerConfigs)
+		len(r.AlertmanagerConfigs) +
+		len(r.RulesFiles) + len(r.RuleGroups) +
+		len(r.AlertingRules) + len(r.RecordingRules)
 }
 
 // All returns all discovered resources as a flat slice.
@@ -249,5 +272,9 @@ func (r *DiscoveryResult) All() []*ResourceRef {
 	all = append(all, r.GlobalConfigs...)
 	all = append(all, r.StaticConfigs...)
 	all = append(all, r.AlertmanagerConfigs...)
+	all = append(all, r.RulesFiles...)
+	all = append(all, r.RuleGroups...)
+	all = append(all, r.AlertingRules...)
+	all = append(all, r.RecordingRules...)
 	return all
 }
