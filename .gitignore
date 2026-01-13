@@ -1,6 +1,6 @@
-# Binaries
-wetwire-obs
-wetwire-obs-mcp
+# Binaries (root level only)
+/wetwire-obs
+/wetwire-obs-mcp
 *.exe
 
 # Test coverage
