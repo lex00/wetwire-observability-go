@@ -1,0 +1,25 @@
+# Binaries
+wetwire-obs
+wetwire-obs-mcp
+*.exe
+
+# Test coverage
+coverage.out
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
+bin/
+
+# Generated specs (codegen)
+specs/
+!specs/.gitkeep
