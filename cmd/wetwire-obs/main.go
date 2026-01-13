@@ -31,6 +31,8 @@ func run(args []string) int {
 		return listCmd(cmdArgs)
 	case "import":
 		return importCmd(cmdArgs)
+	case "validate":
+		return validateCmd(cmdArgs)
 	case "version":
 		fmt.Printf("wetwire-obs %s\n", Version)
 		return 0
@@ -55,10 +57,10 @@ func printUsage() {
 	fmt.Println("  lint      Check code quality and best practices")
 	fmt.Println("  list      List discovered resources")
 	fmt.Println("  import    Convert existing configs (prometheus.yml) to Go code")
+	fmt.Println("  validate  Run external validators (promtool, amtool, kubeconform)")
 	fmt.Println("  version   Show version information")
 	fmt.Println()
 	fmt.Println("Future commands:")
-	fmt.Println("  validate  Run external validators (promtool, amtool)")
 	fmt.Println("  design    AI-assisted generation")
 	fmt.Println("  mcp       Start MCP server for Claude Code")
 	fmt.Println()
