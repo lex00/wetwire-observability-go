@@ -133,25 +133,25 @@ type Receiver struct {
 	OpsGenieConfigs []*OpsGenieConfig `yaml:"opsgenie_configs,omitempty"`
 }
 
-// Placeholder receiver config types - will be expanded later.
+// EmailConfig configures email notifications.
+// Placeholder - will be expanded in issue #29.
 type EmailConfig struct {
-	To string `yaml:"to,omitempty"`
+	SendResolved *bool  `yaml:"send_resolved,omitempty"`
+	To           string `yaml:"to,omitempty"`
 }
 
-type SlackConfig struct {
-	Channel string `yaml:"channel,omitempty"`
-}
-
-type PagerDutyConfig struct {
-	RoutingKey string `yaml:"routing_key,omitempty"`
-}
-
+// WebhookConfig configures webhook notifications.
+// Placeholder - will be expanded in issue #29.
 type WebhookConfig struct {
-	URL string `yaml:"url,omitempty"`
+	SendResolved *bool  `yaml:"send_resolved,omitempty"`
+	URL          string `yaml:"url,omitempty"`
 }
 
+// OpsGenieConfig configures OpsGenie notifications.
+// Placeholder - will be expanded in issue #29.
 type OpsGenieConfig struct {
-	APIKey string `yaml:"api_key,omitempty"`
+	SendResolved *bool  `yaml:"send_resolved,omitempty"`
+	APIKey       Secret `yaml:"api_key,omitempty"`
 }
 
 // InhibitRule defines a rule for muting alerts.
