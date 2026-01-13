@@ -6,30 +6,59 @@ import (
 	"os"
 )
 
+// Version is set by the build process
+var Version = "dev"
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Println("wetwire-obs - Prometheus, Alertmanager, and Grafana configuration synthesis")
-		fmt.Println()
-		fmt.Println("Usage:")
-		fmt.Println("  wetwire-obs <command> [options]")
-		fmt.Println()
-		fmt.Println("Commands:")
-		fmt.Println("  build     Generate configuration files")
-		fmt.Println("  lint      Check code quality")
-		fmt.Println("  import    Convert existing configs to Go")
-		fmt.Println("  validate  Run external validators")
-		fmt.Println("  list      List discovered resources")
-		fmt.Println("  mcp       Start MCP server")
-		fmt.Println("  version   Show version information")
-		os.Exit(0)
+	os.Exit(run(os.Args[1:]))
+}
+
+func run(args []string) int {
+	if len(args) < 1 {
+		printUsage()
+		return 0
 	}
 
-	cmd := os.Args[1]
+	cmd := args[0]
+	cmdArgs := args[1:]
+
 	switch cmd {
+	case "build":
+		return buildCmd(cmdArgs)
+	case "lint":
+		return lintCmd(cmdArgs)
+	case "list":
+		return listCmd(cmdArgs)
 	case "version":
-		fmt.Println("wetwire-obs v0.0.1")
+		fmt.Printf("wetwire-obs %s\n", Version)
+		return 0
+	case "help", "-h", "--help":
+		printUsage()
+		return 0
 	default:
 		fmt.Fprintf(os.Stderr, "Unknown command: %s\n", cmd)
-		os.Exit(1)
+		fmt.Fprintln(os.Stderr, "Run 'wetwire-obs help' for usage.")
+		return 1
 	}
+}
+
+func printUsage() {
+	fmt.Println("wetwire-obs - Prometheus, Alertmanager, and Grafana configuration synthesis")
+	fmt.Println()
+	fmt.Println("Usage:")
+	fmt.Println("  wetwire-obs <command> [options]")
+	fmt.Println()
+	fmt.Println("Commands:")
+	fmt.Println("  build     Generate configuration files (prometheus.yml, etc.)")
+	fmt.Println("  lint      Check code quality and best practices")
+	fmt.Println("  list      List discovered resources")
+	fmt.Println("  version   Show version information")
+	fmt.Println()
+	fmt.Println("Future commands:")
+	fmt.Println("  import    Convert existing configs to Go")
+	fmt.Println("  validate  Run external validators (promtool, amtool)")
+	fmt.Println("  design    AI-assisted generation")
+	fmt.Println("  mcp       Start MCP server for Claude Code")
+	fmt.Println()
+	fmt.Println("Run 'wetwire-obs <command> --help' for command-specific help.")
 }
