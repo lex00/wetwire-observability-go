@@ -69,11 +69,17 @@ type ScrapeConfig struct {
 	// KubernetesSDConfigs defines Kubernetes service discovery configurations.
 	KubernetesSDConfigs []*KubernetesSD `yaml:"kubernetes_sd_configs,omitempty"`
 
-	// Service discovery configurations to be added:
-	// - ConsulSDConfigs
-	// - EC2SDConfigs
-	// - FileSDConfigs
-	// - DNSSDConfigs
+	// ConsulSDConfigs defines Consul service discovery configurations.
+	ConsulSDConfigs []*ConsulSD `yaml:"consul_sd_configs,omitempty"`
+
+	// EC2SDConfigs defines EC2 service discovery configurations.
+	EC2SDConfigs []*EC2SD `yaml:"ec2_sd_configs,omitempty"`
+
+	// FileSDConfigs defines file-based service discovery configurations.
+	FileSDConfigs []*FileSD `yaml:"file_sd_configs,omitempty"`
+
+	// DNSSDConfigs defines DNS-based service discovery configurations.
+	DNSSDConfigs []*DNSSD `yaml:"dns_sd_configs,omitempty"`
 }
 
 // StaticConfig represents a static target group with an optional set of labels.
@@ -148,6 +154,30 @@ func (s *ScrapeConfig) WithStaticTargets(targets ...string) *ScrapeConfig {
 // WithKubernetesSD adds a Kubernetes service discovery configuration.
 func (s *ScrapeConfig) WithKubernetesSD(sd *KubernetesSD) *ScrapeConfig {
 	s.KubernetesSDConfigs = append(s.KubernetesSDConfigs, sd)
+	return s
+}
+
+// WithConsulSD adds a Consul service discovery configuration.
+func (s *ScrapeConfig) WithConsulSD(sd *ConsulSD) *ScrapeConfig {
+	s.ConsulSDConfigs = append(s.ConsulSDConfigs, sd)
+	return s
+}
+
+// WithEC2SD adds an EC2 service discovery configuration.
+func (s *ScrapeConfig) WithEC2SD(sd *EC2SD) *ScrapeConfig {
+	s.EC2SDConfigs = append(s.EC2SDConfigs, sd)
+	return s
+}
+
+// WithFileSD adds a file-based service discovery configuration.
+func (s *ScrapeConfig) WithFileSD(sd *FileSD) *ScrapeConfig {
+	s.FileSDConfigs = append(s.FileSDConfigs, sd)
+	return s
+}
+
+// WithDNSSD adds a DNS-based service discovery configuration.
+func (s *ScrapeConfig) WithDNSSD(sd *DNSSD) *ScrapeConfig {
+	s.DNSSDConfigs = append(s.DNSSDConfigs, sd)
 	return s
 }
 
