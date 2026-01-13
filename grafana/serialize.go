@@ -203,6 +203,18 @@ func getPanelGridPos(p any) *GridPos {
 		return &panel.GridPos
 	case *TablePanel:
 		return &panel.GridPos
+	case *GaugePanel:
+		return &panel.GridPos
+	case *BarGaugePanel:
+		return &panel.GridPos
+	case *PieChartPanel:
+		return &panel.GridPos
+	case *LogsPanel:
+		return &panel.GridPos
+	case *TextPanel:
+		return &panel.GridPos
+	case *HeatmapPanel:
+		return &panel.GridPos
 	default:
 		return nil
 	}
@@ -235,6 +247,18 @@ func setPanelID(p any, id int) {
 	case *StatPanel:
 		panel.ID = id
 	case *TablePanel:
+		panel.ID = id
+	case *GaugePanel:
+		panel.ID = id
+	case *BarGaugePanel:
+		panel.ID = id
+	case *PieChartPanel:
+		panel.ID = id
+	case *LogsPanel:
+		panel.ID = id
+	case *TextPanel:
+		panel.ID = id
+	case *HeatmapPanel:
 		panel.ID = id
 	}
 }
@@ -320,6 +344,18 @@ func setGridPos(p any, x, y, w, h int) {
 	case *StatPanel:
 		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
 	case *TablePanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *GaugePanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *BarGaugePanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *PieChartPanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *LogsPanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *TextPanel:
+		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
+	case *HeatmapPanel:
 		panel.GridPos = GridPos{X: x, Y: y, W: w, H: h}
 	}
 }

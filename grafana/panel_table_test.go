@@ -64,8 +64,8 @@ func TestTable_FooterCalcs(t *testing.T) {
 
 func TestTable_SortByColumn(t *testing.T) {
 	p := Table("Requests").SortByColumn("Value", true)
-	if p.Options.SortBy == nil || len(p.Options.SortBy) == 0 {
-		t.Fatal("SortBy is nil or empty")
+	if len(p.Options.SortBy) == 0 {
+		t.Fatal("SortBy is empty")
 	}
 	if p.Options.SortBy[0].DisplayName != "Value" {
 		t.Errorf("SortBy[0].DisplayName = %v", p.Options.SortBy[0].DisplayName)

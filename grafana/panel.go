@@ -136,38 +136,6 @@ func (b *BasePanel) GetGridPos() GridPos {
 	return b.GridPos
 }
 
-// WithDescription sets the panel description.
-func (b *BasePanel) withDescription(desc string) {
-	b.Description = desc
-}
-
-// WithDatasource sets the data source.
-func (b *BasePanel) withDatasource(ds string) {
-	b.Datasource = ds
-}
-
-// WithSize sets the panel size.
-func (b *BasePanel) withSize(w, h int) {
-	b.GridPos.W = w
-	b.GridPos.H = h
-}
-
-// WithPosition sets the panel position.
-func (b *BasePanel) withPosition(x, y int) {
-	b.GridPos.X = x
-	b.GridPos.Y = y
-}
-
-// WithTargets sets the query targets.
-func (b *BasePanel) withTargets(targets ...any) {
-	b.Targets = targets
-}
-
-// AddTarget adds a query target.
-func (b *BasePanel) addTarget(target any) {
-	b.Targets = append(b.Targets, target)
-}
-
 // FieldConfig contains field configuration.
 type FieldConfig struct {
 	Defaults  FieldDefaults   `json:"defaults,omitempty"`
