@@ -34,16 +34,21 @@ type DiscoveryResult struct {
 	GlobalConfigs []*ResourceRef `json:"global_configs,omitempty"`
 	// StaticConfigs are discovered static configuration resources.
 	StaticConfigs []*ResourceRef `json:"static_configs,omitempty"`
+	// AlertmanagerConfigs are discovered Alertmanager configuration resources.
+	AlertmanagerConfigs []*ResourceRef `json:"alertmanager_configs,omitempty"`
 	// Errors encountered during discovery (non-fatal).
 	Errors []string `json:"errors,omitempty"`
 }
 
-// prometheusTypes are the types we look for in the prometheus package.
-var prometheusTypes = map[string]bool{
+// observabilityTypes are the types we look for in wetwire packages.
+var observabilityTypes = map[string]bool{
+	// Prometheus types
 	"PrometheusConfig": true,
 	"GlobalConfig":     true,
 	"ScrapeConfig":     true,
 	"StaticConfig":     true,
+	// Alertmanager types
+	"AlertmanagerConfig": true,
 }
 
 // normalizeTypeName extracts the simple type name from a potentially qualified type.
@@ -98,6 +103,8 @@ func Discover(dir string) (*DiscoveryResult, error) {
 				result.GlobalConfigs = append(result.GlobalConfigs, ref)
 			case "StaticConfig":
 				result.StaticConfigs = append(result.StaticConfigs, ref)
+			case "AlertmanagerConfig":
+				result.AlertmanagerConfigs = append(result.AlertmanagerConfigs, ref)
 			}
 		}
 		result.Errors = append(result.Errors, errs...)
@@ -155,8 +162,8 @@ func discoverFile(path string) ([]*ResourceRef, []string) {
 				// Normalize the type name (strip package prefix)
 				simpleType := normalizeTypeName(typeName)
 
-				// Check if it's a prometheus type we care about
-				if !prometheusTypes[simpleType] {
+				// Check if it's an observability type we care about
+				if !observabilityTypes[simpleType] {
 					continue
 				}
 
@@ -230,7 +237,8 @@ func inferTypeFromValue(expr ast.Expr) string {
 // TotalCount returns the total number of discovered resources.
 func (r *DiscoveryResult) TotalCount() int {
 	return len(r.PrometheusConfigs) + len(r.ScrapeConfigs) +
-		len(r.GlobalConfigs) + len(r.StaticConfigs)
+		len(r.GlobalConfigs) + len(r.StaticConfigs) +
+		len(r.AlertmanagerConfigs)
 }
 
 // All returns all discovered resources as a flat slice.
@@ -240,5 +248,6 @@ func (r *DiscoveryResult) All() []*ResourceRef {
 	all = append(all, r.ScrapeConfigs...)
 	all = append(all, r.GlobalConfigs...)
 	all = append(all, r.StaticConfigs...)
+	all = append(all, r.AlertmanagerConfigs...)
 	return all
 }

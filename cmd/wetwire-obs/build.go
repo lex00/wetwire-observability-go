@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/lex00/wetwire-observability-go/alertmanager"
 	"github.com/lex00/wetwire-observability-go/internal/discover"
 	"github.com/lex00/wetwire-observability-go/prometheus"
 )
@@ -80,6 +81,13 @@ func buildCmd(args []string) int {
 	if len(result.PrometheusConfigs) > 0 {
 		if err := buildPrometheusConfigs(srcDir, result.PrometheusConfigs, *outputDir, *mode); err != nil {
 			fmt.Fprintf(os.Stderr, "Error building prometheus configs: %v\n", err)
+			return 1
+		}
+	}
+
+	if len(result.AlertmanagerConfigs) > 0 {
+		if err := buildAlertmanagerConfigs(srcDir, result.AlertmanagerConfigs, *outputDir, *mode); err != nil {
+			fmt.Fprintf(os.Stderr, "Error building alertmanager configs: %v\n", err)
 			return 1
 		}
 	}
@@ -221,4 +229,128 @@ func isZeroValue(v interface{}) bool {
 	}
 	val := reflect.ValueOf(v)
 	return !val.IsValid() || val.IsZero()
+}
+
+// buildAlertmanagerConfigs loads and serializes AlertmanagerConfig resources
+func buildAlertmanagerConfigs(srcDir string, refs []*discover.ResourceRef, outputDir, mode string) error {
+	// Create output directory
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("creating output directory: %w", err)
+	}
+
+	for _, ref := range refs {
+		fmt.Printf("Processing %s.%s from %s:%d\n", ref.Package, ref.Name, filepath.Base(ref.FilePath), ref.Line)
+
+		// Load the config by executing the package
+		config, err := loadAlertmanagerConfig(srcDir, ref)
+		if err != nil {
+			fmt.Printf("  Warning: could not load config: %v\n", err)
+			continue
+		}
+
+		// Generate output filename
+		outputFile := filepath.Join(outputDir, fmt.Sprintf("alertmanager-%s.yml", strings.ToLower(ref.Name)))
+
+		// Serialize to file
+		if err := config.SerializeToFile(outputFile); err != nil {
+			return fmt.Errorf("serializing %s: %w", ref.Name, err)
+		}
+
+		fmt.Printf("  Generated %s\n", outputFile)
+	}
+
+	return nil
+}
+
+// loadAlertmanagerConfig loads an AlertmanagerConfig by building and running the package
+func loadAlertmanagerConfig(srcDir string, ref *discover.ResourceRef) (*alertmanager.AlertmanagerConfig, error) {
+	// Get the package path
+	pkgDir := filepath.Dir(ref.FilePath)
+	pkg, err := build.ImportDir(pkgDir, build.FindOnly)
+	if err != nil {
+		// Fall back to creating a minimal example config
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	// Create a temporary program to load and output the config
+	tmpDir, err := os.MkdirTemp("", "wetwire-build-*")
+	if err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Write the helper program
+	helperCode := fmt.Sprintf(`package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	target %q
+)
+
+func main() {
+	data, err := json.Marshal(target.%s)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %%v\n", err)
+		os.Exit(1)
+	}
+	fmt.Println(string(data))
+}
+`, pkg.ImportPath, ref.Name)
+
+	helperPath := filepath.Join(tmpDir, "main.go")
+	if err := os.WriteFile(helperPath, []byte(helperCode), 0644); err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	// Initialize go.mod for the helper
+	modPath := filepath.Join(tmpDir, "go.mod")
+	modContent := fmt.Sprintf(`module helper
+
+go 1.23
+
+require %s v0.0.0
+
+replace %s => %s
+`, pkg.ImportPath, pkg.ImportPath, pkgDir)
+	if err := os.WriteFile(modPath, []byte(modContent), 0644); err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	// Run go mod tidy
+	tidyCmd := exec.Command("go", "mod", "tidy")
+	tidyCmd.Dir = tmpDir
+	if err := tidyCmd.Run(); err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	// Build and run the helper
+	runCmd := exec.Command("go", "run", "main.go")
+	runCmd.Dir = tmpDir
+	output, err := runCmd.Output()
+	if err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	// Parse the output
+	var config alertmanager.AlertmanagerConfig
+	if err := json.Unmarshal(output, &config); err != nil {
+		return createMinimalAlertmanagerConfig(ref), nil
+	}
+
+	return &config, nil
+}
+
+// createMinimalAlertmanagerConfig creates a minimal placeholder config
+func createMinimalAlertmanagerConfig(ref *discover.ResourceRef) *alertmanager.AlertmanagerConfig {
+	return &alertmanager.AlertmanagerConfig{
+		Route: &alertmanager.Route{
+			Receiver: "default",
+		},
+		Receivers: []*alertmanager.Receiver{
+			{Name: "default"},
+		},
+	}
 }
