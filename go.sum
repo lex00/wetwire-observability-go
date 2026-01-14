@@ -1,5 +1,5 @@
-github.com/lex00/wetwire-core-go v1.5.3 h1:oi5NbB71XMDbw3Agfd7i0CxWt/yC5OaBd9Xm+ECVLYY=
-github.com/lex00/wetwire-core-go v1.5.3/go.mod h1:YQZAyTn0YyXFzgrHSogr7S3bZnt45xuEWjEV3TJKf3A=
+github.com/lex00/wetwire-core-go v1.5.4 h1:xFE9+APv4iM8yzLwxYSeYgATrSj1QhMoWSsnHx+5yVE=
+github.com/lex00/wetwire-core-go v1.5.4/go.mod h1:YQZAyTn0YyXFzgrHSogr7S3bZnt45xuEWjEV3TJKf3A=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
