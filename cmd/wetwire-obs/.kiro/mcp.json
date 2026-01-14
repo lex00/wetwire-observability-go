@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "wetwire-obs-mcp": {
+      "command": "uvx",
+      "args": [
+        "wetwire-obs-mcp"
+      ]
+    }
+  }
+}
