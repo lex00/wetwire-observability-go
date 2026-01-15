@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated wetwire-core-go to v1.5.4 for Kiro provider cwd fix
+
 ### Added
 
 #### Phase 1: Foundation (Complete)
