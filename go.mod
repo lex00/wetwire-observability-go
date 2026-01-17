@@ -6,7 +6,7 @@ require gopkg.in/yaml.v3 v3.0.1
 
 require (
 	github.com/fsnotify/fsnotify v1.9.0
-	github.com/lex00/wetwire-core-go v1.14.0
+	github.com/lex00/wetwire-core-go v1.15.0
 	github.com/spf13/cobra v1.10.2
 )
 

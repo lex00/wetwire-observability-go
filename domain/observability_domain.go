@@ -184,6 +184,92 @@ func (l *observabilityLinter) Lint(ctx *Context, path string, opts LintOpts) (*R
 type observabilityInitializer struct{}
 
 func (i *observabilityInitializer) Init(ctx *Context, path string, opts InitOpts) (*Result, error) {
+	// Use opts.Path if provided, otherwise fall back to path argument
+	targetPath := opts.Path
+	if targetPath == "" || targetPath == "." {
+		targetPath = path
+	}
+
+	// Handle scenario initialization
+	if opts.Scenario {
+		return i.initScenario(ctx, targetPath, opts)
+	}
+
+	// Basic project initialization
+	return i.initProject(ctx, targetPath, opts)
+}
+
+// initScenario creates a full scenario structure with prompts and expected outputs
+func (i *observabilityInitializer) initScenario(ctx *Context, path string, opts InitOpts) (*Result, error) {
+	name := opts.Name
+	if name == "" {
+		name = filepath.Base(path)
+	}
+
+	description := opts.Description
+	if description == "" {
+		description = "Observability scenario"
+	}
+
+	// Use core's scenario scaffolding
+	scenario := coredomain.ScaffoldScenario(name, description, "observability")
+	created, err := coredomain.WriteScenario(path, scenario)
+	if err != nil {
+		return nil, fmt.Errorf("write scenario: %w", err)
+	}
+
+	// Create observability-specific expected directories
+	expectedDirs := []string{
+		filepath.Join(path, "expected", "prometheus"),
+		filepath.Join(path, "expected", "alertmanager"),
+		filepath.Join(path, "expected", "rules"),
+	}
+	for _, dir := range expectedDirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, fmt.Errorf("create directory %s: %w", dir, err)
+		}
+	}
+
+	// Create example prometheus config in expected/prometheus/
+	exampleConfig := `package monitoring
+
+import "github.com/lex00/wetwire-observability-go/prometheus"
+
+// Production is the Prometheus configuration for production
+var Production = prometheus.PrometheusConfig{
+	Global: &prometheus.GlobalConfig{
+		ScrapeInterval:     prometheus.Duration("15s"),
+		EvaluationInterval: prometheus.Duration("15s"),
+		ExternalLabels: map[string]string{
+			"environment": "production",
+		},
+	},
+	ScrapeConfigs: []*prometheus.ScrapeConfig{
+		{
+			JobName: "prometheus",
+			StaticConfigs: []*prometheus.StaticConfig{
+				{
+					Targets: []string{"localhost:9090"},
+				},
+			},
+		},
+	},
+}
+`
+	configPath := filepath.Join(path, "expected", "prometheus", "prometheus.go")
+	if err := os.WriteFile(configPath, []byte(exampleConfig), 0644); err != nil {
+		return nil, fmt.Errorf("write example config: %w", err)
+	}
+	created = append(created, "expected/prometheus/prometheus.go")
+
+	return NewResultWithData(
+		fmt.Sprintf("Created scenario %s with %d files", name, len(created)),
+		created,
+	), nil
+}
+
+// initProject creates a basic project with example prometheus config
+func (i *observabilityInitializer) initProject(ctx *Context, path string, opts InitOpts) (*Result, error) {
 	// Create directory
 	if err := os.MkdirAll(path, 0755); err != nil {
 		return nil, fmt.Errorf("create directory: %w", err)
