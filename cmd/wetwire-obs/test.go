@@ -1,77 +1,69 @@
+// Command test runs persona-based testing of observability configurations.
 package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
-	"os"
-	"strings"
 
 	"github.com/lex00/wetwire-observability-go/testrunner"
+	"github.com/spf13/cobra"
 )
 
-func testCmd(args []string) int {
-	fs := flag.NewFlagSet("test", flag.ContinueOnError)
-	persona := fs.String("persona", "", "Persona to evaluate against (sre, developer, security, beginner)")
-	all := fs.Bool("all", false, "Evaluate against all personas")
-	format := fs.String("format", "text", "Output format: text or json")
-	listPersonas := fs.Bool("list-personas", false, "List available personas")
-	threshold := fs.Int("threshold", 0, "Minimum passing score percentage (0-100)")
+func newTestCmd() *cobra.Command {
+	var (
+		persona      string
+		all          bool
+		format       string
+		listPersonas bool
+		threshold    int
+	)
 
-	fs.Usage = func() {
-		fmt.Println("Usage: wetwire-obs test [options] <path>")
-		fmt.Println()
-		fmt.Println("Evaluate observability configurations against personas.")
-		fmt.Println()
-		fmt.Println("Options:")
-		fs.PrintDefaults()
-		fmt.Println()
-		fmt.Println("Personas:")
-		fmt.Println("  sre        Site Reliability Engineer - reliability, alerting, SLOs")
-		fmt.Println("  developer  Developer - debugging, application metrics, tracing")
-		fmt.Println("  security   Security Analyst - auth, compliance, threat detection")
-		fmt.Println("  beginner   Beginner - basic monitoring setup")
-		fmt.Println()
-		fmt.Println("Examples:")
-		fmt.Println("  wetwire-obs test --persona sre ./monitoring")
-		fmt.Println("  wetwire-obs test --all --format json ./monitoring")
-		fmt.Println("  wetwire-obs test --persona beginner --threshold 70 ./monitoring")
+	cmd := &cobra.Command{
+		Use:   "test <path>",
+		Short: "Evaluate observability configurations against personas",
+		Long: `Test evaluates observability configurations against different personas.
+
+Available personas:
+  - sre: Site Reliability Engineer - reliability, alerting, SLOs
+  - developer: Developer - debugging, application metrics, tracing
+  - security: Security Analyst - auth, compliance, threat detection
+  - beginner: Beginner - basic monitoring setup
+
+Examples:
+  wetwire-obs test --persona sre ./monitoring
+  wetwire-obs test --all --format json ./monitoring
+  wetwire-obs test --persona beginner --threshold 70 ./monitoring`,
+		Args: cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if listPersonas {
+				printPersonas()
+				return nil
+			}
+			return runTest(args[0], persona, all, format, threshold)
+		},
 	}
 
-	if err := fs.Parse(args); err != nil {
-		if err == flag.ErrHelp {
-			return 0
-		}
-		return 1
-	}
+	cmd.Flags().StringVarP(&persona, "persona", "p", "", "Persona to evaluate against")
+	cmd.Flags().BoolVar(&all, "all", false, "Evaluate against all personas")
+	cmd.Flags().StringVarP(&format, "format", "f", "text", "Output format: text or json")
+	cmd.Flags().BoolVar(&listPersonas, "list-personas", false, "List available personas")
+	cmd.Flags().IntVar(&threshold, "threshold", 0, "Minimum passing score percentage (0-100)")
 
-	// Handle list-personas
-	if *listPersonas {
-		printPersonas()
-		return 0
-	}
+	return cmd
+}
 
-	// Get path
-	if fs.NArg() < 1 {
-		fmt.Fprintln(os.Stderr, "Error: no path provided")
-		fmt.Fprintln(os.Stderr, "Usage: wetwire-obs test [options] <path>")
-		return 1
-	}
-	path := fs.Arg(0)
-
+func runTest(path, persona string, all bool, format string, threshold int) error {
 	// Create runner
 	runner := testrunner.NewRunner()
 
-	if *all {
+	if all {
 		runner.WithAllPersonas()
-	} else if *persona != "" {
-		p := testrunner.GetPersona(*persona)
+	} else if persona != "" {
+		p := testrunner.GetPersona(persona)
 		if p == nil {
-			fmt.Fprintf(os.Stderr, "Error: unknown persona %q\n", *persona)
-			fmt.Fprintln(os.Stderr, "Available personas: sre, developer, security, beginner")
-			return 1
+			return fmt.Errorf("unknown persona %q\nAvailable: sre, developer, security, beginner", persona)
 		}
-		runner.WithPersona(*persona)
+		runner.WithPersona(persona)
 	} else {
 		// Default to beginner
 		runner.WithPersona("beginner")
@@ -80,12 +72,11 @@ func testCmd(args []string) int {
 	// Evaluate
 	result, err := runner.Evaluate(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		return 1
+		return err
 	}
 
 	// Output
-	switch *format {
+	switch format {
 	case "json":
 		data, _ := json.MarshalIndent(result, "", "  ")
 		fmt.Println(string(data))
@@ -94,13 +85,11 @@ func testCmd(args []string) int {
 	}
 
 	// Check threshold
-	if *threshold > 0 && result.Percentage < float64(*threshold) {
-		fmt.Fprintf(os.Stderr, "\nFailed: score %.1f%% below threshold %d%%\n",
-			result.Percentage, *threshold)
-		return 1
+	if threshold > 0 && result.Percentage < float64(threshold) {
+		return fmt.Errorf("score %.1f%% below threshold %d%%", result.Percentage, threshold)
 	}
 
-	return 0
+	return nil
 }
 
 func printPersonas() {
@@ -118,7 +107,7 @@ func printPersonas() {
 func printTextResult(result *testrunner.Result) {
 	fmt.Println()
 	fmt.Println("Evaluation Results")
-	fmt.Println(strings.Repeat("=", 50))
+	fmt.Println("==================================================")
 	fmt.Println()
 
 	for _, pr := range result.PersonaResults {
@@ -173,7 +162,7 @@ func printTextResult(result *testrunner.Result) {
 	}
 
 	// Overall
-	fmt.Println(strings.Repeat("-", 50))
+	fmt.Println("--------------------------------------------------")
 	fmt.Printf("Overall Score: %d/%d (%.1f%%)\n",
 		result.TotalScore, result.MaxScore, result.Percentage)
 

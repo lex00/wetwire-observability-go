@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/lex00/wetwire-observability-go/domain"
@@ -18,8 +19,16 @@ func main() {
 	d := &domain.ObservabilityDomain{}
 	cmd := domain.CreateRootCommand(d)
 
+	// Add observability-specific commands
+	cmd.AddCommand(newDesignCmd())
+	cmd.AddCommand(newTestCmd())
+	cmd.AddCommand(newDiffCmd())
+	cmd.AddCommand(newWatchCmd())
+	cmd.AddCommand(newMCPCmd())
+
 	// Execute
 	if err := cmd.Execute(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
