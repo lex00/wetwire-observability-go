@@ -5,7 +5,7 @@ go 1.23.0
 require gopkg.in/yaml.v3 v3.0.1
 
 require (
-	github.com/lex00/wetwire-core-go v1.12.0
+	github.com/lex00/wetwire-core-go v1.13.0
 	github.com/spf13/cobra v1.10.2
 )
 

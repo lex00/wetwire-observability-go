@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Updated wetwire-core-go to v1.5.4 for Kiro provider cwd fix
+- Migrated MCP server to use domain.BuildMCPServer() from wetwire-core-go v1.13.0
+- Updated wetwire-core-go from v1.12.0 to v1.13.0
+- Removed manual MCP implementation in favor of auto-generated MCP server
 
 ### Added
 
