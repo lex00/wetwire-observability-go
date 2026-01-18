@@ -197,10 +197,17 @@ func (l *observabilityLinter) Lint(ctx *Context, path string, opts LintOpts) (*R
 		}
 	}
 
-	// Build message based on results
+	// Return errors if lint issues found
 	if len(lintResult.Issues) > 0 {
-		return NewResult(fmt.Sprintf("Linted %d resources: %d issues found",
-			lintResult.ResourceCount, len(lintResult.Issues))), nil
+		errs := make([]Error, 0, len(lintResult.Issues))
+		for _, issue := range lintResult.Issues {
+			errs = append(errs, Error{
+				Path:    issue.File,
+				Line:    issue.Line,
+				Message: fmt.Sprintf("[%s] %s", issue.RuleID, issue.Message),
+			})
+		}
+		return NewErrorResultMultiple("lint issues found", errs), nil
 	}
 
 	// Build success message
