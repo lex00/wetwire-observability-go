@@ -2,12 +2,12 @@
 package discover
 
 import (
-	"go/ast"
 	"go/parser"
 	"go/token"
-	"os"
-	"path/filepath"
 	"strings"
+
+	coreast "github.com/lex00/wetwire-core-go/ast"
+	corediscover "github.com/lex00/wetwire-core-go/discover"
 )
 
 // ResourceRef represents a discovered wetwire resource.
@@ -64,194 +64,105 @@ var observabilityTypes = map[string]bool{
 	"RecordingRule": true,
 }
 
-// normalizeTypeName extracts the simple type name from a potentially qualified type.
-// e.g., "prometheus.PrometheusConfig" -> "PrometheusConfig"
-func normalizeTypeName(typeName string) string {
-	if idx := strings.LastIndex(typeName, "."); idx != -1 {
-		return typeName[idx+1:]
+// observabilityTypeMatcher creates a TypeMatcher for observability types.
+func observabilityTypeMatcher(pkgName, typeName string, imports map[string]string) (string, bool) {
+	// Check if this is an observability type
+	if observabilityTypes[typeName] {
+		return typeName, true
 	}
-	return typeName
+	return "", false
 }
 
 // Discover finds all wetwire resources in the given directory.
 // It recursively searches all Go files and parses them for resource declarations.
 func Discover(dir string) (*DiscoveryResult, error) {
-	result := &DiscoveryResult{}
-
-	// Walk the directory tree
-	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			result.Errors = append(result.Errors, err.Error())
-			return nil // Continue walking
-		}
-
-		// Skip hidden directories and vendor
-		if info.IsDir() {
-			name := info.Name()
-			if name == "vendor" || strings.HasPrefix(name, ".") {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-
-		// Only process .go files
-		if !strings.HasSuffix(path, ".go") {
-			return nil
-		}
-
-		// Skip test files
-		if strings.HasSuffix(path, "_test.go") {
-			return nil
-		}
-
-		// Parse the file
-		refs, errs := discoverFile(path)
-		for _, ref := range refs {
-			switch ref.Type {
-			case "PrometheusConfig":
-				result.PrometheusConfigs = append(result.PrometheusConfigs, ref)
-			case "ScrapeConfig":
-				result.ScrapeConfigs = append(result.ScrapeConfigs, ref)
-			case "GlobalConfig":
-				result.GlobalConfigs = append(result.GlobalConfigs, ref)
-			case "StaticConfig":
-				result.StaticConfigs = append(result.StaticConfigs, ref)
-			case "AlertmanagerConfig":
-				result.AlertmanagerConfigs = append(result.AlertmanagerConfigs, ref)
-			case "RulesFile":
-				result.RulesFiles = append(result.RulesFiles, ref)
-			case "RuleGroup":
-				result.RuleGroups = append(result.RuleGroups, ref)
-			case "AlertingRule":
-				result.AlertingRules = append(result.AlertingRules, ref)
-			case "RecordingRule":
-				result.RecordingRules = append(result.RecordingRules, ref)
-			}
-		}
-		result.Errors = append(result.Errors, errs...)
-
-		return nil
+	// Use core discover package
+	coreResult, err := corediscover.Discover(corediscover.DiscoverOptions{
+		Packages:    []string{dir},
+		TypeMatcher: observabilityTypeMatcher,
 	})
-
 	if err != nil {
 		return nil, err
+	}
+
+	// Convert core result to observability-specific result
+	result := &DiscoveryResult{}
+
+	// Extract package name from files
+	packageCache := make(map[string]string)
+
+	for _, resource := range coreResult.Resources {
+		// Skip unexported variables (wetwire only considers exported resources)
+		if !isExported(resource.Name) {
+			continue
+		}
+
+		// Get the package name from file if not cached
+		pkg, ok := packageCache[resource.File]
+		if !ok {
+			// Extract package name by parsing the file using core AST utilities
+			pkg = extractPackageFromFile(resource.File)
+			packageCache[resource.File] = pkg
+		}
+
+		ref := &ResourceRef{
+			Package:  pkg,
+			Name:     resource.Name,
+			Type:     resource.Type,
+			FilePath: resource.File,
+			Line:     resource.Line,
+		}
+
+		// Categorize by type
+		switch resource.Type {
+		case "PrometheusConfig":
+			result.PrometheusConfigs = append(result.PrometheusConfigs, ref)
+		case "ScrapeConfig":
+			result.ScrapeConfigs = append(result.ScrapeConfigs, ref)
+		case "GlobalConfig":
+			result.GlobalConfigs = append(result.GlobalConfigs, ref)
+		case "StaticConfig":
+			result.StaticConfigs = append(result.StaticConfigs, ref)
+		case "AlertmanagerConfig":
+			result.AlertmanagerConfigs = append(result.AlertmanagerConfigs, ref)
+		case "RulesFile":
+			result.RulesFiles = append(result.RulesFiles, ref)
+		case "RuleGroup":
+			result.RuleGroups = append(result.RuleGroups, ref)
+		case "AlertingRule":
+			result.AlertingRules = append(result.AlertingRules, ref)
+		case "RecordingRule":
+			result.RecordingRules = append(result.RecordingRules, ref)
+		}
+	}
+
+	// Convert errors
+	for _, err := range coreResult.Errors {
+		result.Errors = append(result.Errors, err.Error())
 	}
 
 	return result, nil
 }
 
-// discoverFile parses a single Go file and returns discovered resources.
-func discoverFile(path string) ([]*ResourceRef, []string) {
-	fset := token.NewFileSet()
-	file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
+// extractPackageFromFile extracts the package name from a Go file.
+// This uses the core AST utilities for parsing.
+func extractPackageFromFile(path string) string {
+	// Use core ast.ParseFile to get the package name
+	astFile, _, err := coreast.ParseFile(path)
 	if err != nil {
-		return nil, []string{err.Error()}
-	}
-
-	var refs []*ResourceRef
-	packageName := file.Name.Name
-
-	// Walk the AST looking for top-level variable declarations
-	for _, decl := range file.Decls {
-		genDecl, ok := decl.(*ast.GenDecl)
-		if !ok {
-			continue
+		// Fallback: try direct parsing with minimal mode
+		fset := token.NewFileSet()
+		file, err := parser.ParseFile(fset, path, nil, parser.PackageClauseOnly)
+		if err != nil {
+			return ""
 		}
-
-		if genDecl.Tok != token.VAR {
-			continue
-		}
-
-		for _, spec := range genDecl.Specs {
-			valueSpec, ok := spec.(*ast.ValueSpec)
-			if !ok {
-				continue
-			}
-
-			for i, name := range valueSpec.Names {
-				// Skip unexported variables
-				if !ast.IsExported(name.Name) {
-					continue
-				}
-
-				// Try to determine the type
-				typeName := extractTypeName(valueSpec, i)
-				if typeName == "" {
-					continue
-				}
-
-				// Normalize the type name (strip package prefix)
-				simpleType := normalizeTypeName(typeName)
-
-				// Check if it's an observability type we care about
-				if !observabilityTypes[simpleType] {
-					continue
-				}
-
-				pos := fset.Position(name.Pos())
-				refs = append(refs, &ResourceRef{
-					Package:  packageName,
-					Name:     name.Name,
-					Type:     simpleType, // Use the normalized type name
-					FilePath: pos.Filename,
-					Line:     pos.Line,
-				})
-			}
-		}
+		return file.Name.Name
 	}
 
-	return refs, nil
-}
-
-// extractTypeName extracts the type name from a ValueSpec.
-func extractTypeName(spec *ast.ValueSpec, index int) string {
-	// First try the explicit type if present
-	if spec.Type != nil {
-		return typeToString(spec.Type)
+	if astFile != nil && astFile.Name != nil {
+		return astFile.Name.Name
 	}
 
-	// Try to infer from the value
-	if index < len(spec.Values) {
-		return inferTypeFromValue(spec.Values[index])
-	}
-
-	return ""
-}
-
-// typeToString converts an ast.Expr type to a string.
-func typeToString(expr ast.Expr) string {
-	switch t := expr.(type) {
-	case *ast.Ident:
-		return t.Name
-	case *ast.StarExpr:
-		// Pointer type, get the underlying type
-		return typeToString(t.X)
-	case *ast.SelectorExpr:
-		// Package-qualified type (e.g., prometheus.PrometheusConfig)
-		if ident, ok := t.X.(*ast.Ident); ok {
-			return ident.Name + "." + t.Sel.Name
-		}
-		return t.Sel.Name
-	case *ast.ArrayType:
-		// Array/slice type
-		elemType := typeToString(t.Elt)
-		return "[]" + elemType
-	}
-	return ""
-}
-
-// inferTypeFromValue tries to infer the type from a value expression.
-func inferTypeFromValue(expr ast.Expr) string {
-	switch v := expr.(type) {
-	case *ast.UnaryExpr:
-		// Handle &Type{} expressions
-		if v.Op == token.AND {
-			return inferTypeFromValue(v.X)
-		}
-	case *ast.CompositeLit:
-		// Handle Type{} composite literals
-		return typeToString(v.Type)
-	}
 	return ""
 }
 
@@ -277,4 +188,23 @@ func (r *DiscoveryResult) All() []*ResourceRef {
 	all = append(all, r.AlertingRules...)
 	all = append(all, r.RecordingRules...)
 	return all
+}
+
+// isExported reports whether name starts with an upper-case letter.
+func isExported(name string) bool {
+	if len(name) == 0 {
+		return false
+	}
+	r := rune(name[0])
+	return r >= 'A' && r <= 'Z'
+}
+
+// normalizeTypeName extracts the simple type name from a potentially qualified type.
+// e.g., "prometheus.PrometheusConfig" -> "PrometheusConfig"
+// This function is kept for backwards compatibility but is no longer used internally.
+func normalizeTypeName(typeName string) string {
+	if idx := strings.LastIndex(typeName, "."); idx != -1 {
+		return typeName[idx+1:]
+	}
+	return typeName
 }
