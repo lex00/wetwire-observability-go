@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- LintOpts.Fix support in domain Lint() - indicates auto-fix not yet implemented when fixable issues found
+- LintOpts.Disable support in domain Lint() - filters out specified rule IDs from lint results
+- Internal lint package with LintOptions, LintIssue, and LintResult types
+
 ### Changed
 - Migrated MCP server to use domain.BuildMCPServer() from wetwire-core-go v1.13.0
 - Updated wetwire-core-go from v1.12.0 to v1.13.0
 - Removed manual MCP implementation in favor of auto-generated MCP server
 
-### Added
+### Previously Added
 
 #### Phase 1: Foundation (Complete)
 - Prometheus Duration type with serialization (30s, 5m, 1h30m format)

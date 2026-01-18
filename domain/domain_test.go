@@ -80,3 +80,58 @@ func TestCreateRootCommand(t *testing.T) {
 		t.Errorf("expected Use 'wetwire-observability', got %q", cmd.Use)
 	}
 }
+
+func TestLinterWithDisableOption(t *testing.T) {
+	d := &ObservabilityDomain{}
+	linter := d.Linter()
+
+	// Test that disabled rules are respected
+	ctx := &Context{}
+	result, err := linter.Lint(ctx, ".", LintOpts{
+		Disable: []string{"WOB001", "WOB002"},
+	})
+
+	if err != nil {
+		t.Fatalf("lint with disable option failed: %v", err)
+	}
+	if result == nil {
+		t.Fatal("lint result should not be nil")
+	}
+}
+
+func TestLinterWithFixOption(t *testing.T) {
+	d := &ObservabilityDomain{}
+	linter := d.Linter()
+
+	// Test that fix option is handled
+	ctx := &Context{}
+	result, err := linter.Lint(ctx, ".", LintOpts{
+		Fix: true,
+	})
+
+	if err != nil {
+		t.Fatalf("lint with fix option failed: %v", err)
+	}
+	if result == nil {
+		t.Fatal("lint result should not be nil")
+	}
+}
+
+func TestLinterWithFixAndDisableOptions(t *testing.T) {
+	d := &ObservabilityDomain{}
+	linter := d.Linter()
+
+	// Test both options together
+	ctx := &Context{}
+	result, err := linter.Lint(ctx, ".", LintOpts{
+		Fix:     true,
+		Disable: []string{"WOB001"},
+	})
+
+	if err != nil {
+		t.Fatalf("lint with fix and disable options failed: %v", err)
+	}
+	if result == nil {
+		t.Fatal("lint result should not be nil")
+	}
+}

@@ -9,6 +9,7 @@ import (
 
 	coredomain "github.com/lex00/wetwire-core-go/domain"
 	"github.com/lex00/wetwire-observability-go/internal/discover"
+	"github.com/lex00/wetwire-observability-go/internal/lint"
 	"github.com/spf13/cobra"
 )
 
@@ -169,15 +170,45 @@ func (l *observabilityLinter) Lint(ctx *Context, path string, opts LintOpts) (*R
 		return nil, fmt.Errorf("resolve path: %w", err)
 	}
 
-	// Discover all resources
-	resources, err := discover.Discover(absPath)
-	if err != nil {
-		return nil, fmt.Errorf("discovery failed: %w", err)
+	// Create lint options from LintOpts
+	lintOpts := lint.LintOptions{
+		DisabledRules: opts.Disable,
+		Fix:           opts.Fix,
 	}
 
-	// For now, just return success
-	// TODO: Implement actual lint rules (WOB001-WOB219)
-	return NewResult(fmt.Sprintf("Linted %d resources: no issues found", resources.TotalCount())), nil
+	// Lint all resources with options
+	lintResult, err := lint.LintAllWithOptions(absPath, lintOpts)
+	if err != nil {
+		return nil, fmt.Errorf("lint failed: %w", err)
+	}
+
+	// Handle Fix mode
+	if opts.Fix && len(lintResult.Issues) > 0 {
+		// Count fixable issues
+		fixableCount := 0
+		for _, issue := range lintResult.Issues {
+			if issue.Fixable {
+				fixableCount++
+			}
+		}
+		if fixableCount > 0 {
+			return NewResult(fmt.Sprintf("Linted %d resources: %d issues found, auto-fix not yet implemented for %d fixable issues",
+				lintResult.ResourceCount, len(lintResult.Issues), fixableCount)), nil
+		}
+	}
+
+	// Build message based on results
+	if len(lintResult.Issues) > 0 {
+		return NewResult(fmt.Sprintf("Linted %d resources: %d issues found",
+			lintResult.ResourceCount, len(lintResult.Issues))), nil
+	}
+
+	// Build success message
+	msg := fmt.Sprintf("Linted %d resources: no issues found", lintResult.ResourceCount)
+	if len(opts.Disable) > 0 {
+		msg += fmt.Sprintf(" (disabled rules: %v)", opts.Disable)
+	}
+	return NewResult(msg), nil
 }
 
 // observabilityInitializer implements domain.Initializer
