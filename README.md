@@ -90,10 +90,18 @@ Requires `ANTHROPIC_API_KEY`. See [CLI Reference](docs/CLI.md#design) for detail
 
 ## Documentation
 
-- [Quick Start](docs/QUICK_START.md) - Full tutorial
-- [CLI Reference](docs/CLI.md) - All commands
-- [Lint Rules](docs/LINT_RULES.md) - WOB rule reference
+**Getting Started:**
+- [Quick Start](docs/QUICK_START.md) - 5-minute tutorial
 - [FAQ](docs/FAQ.md) - Common questions
+
+**Reference:**
+- [CLI Reference](docs/CLI.md) - All commands including design, test, import
+- [Lint Rules](docs/LINT_RULES.md) - WOB rule reference
+
+**Advanced:**
+- [Internals](docs/INTERNALS.md) - Architecture and extension points
+- [Adoption Guide](docs/ADOPTION.md) - Team migration strategies
+- [Import Workflow](docs/IMPORT_WORKFLOW.md) - Migrate existing configs
 
 ## Development
 

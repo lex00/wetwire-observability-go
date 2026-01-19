@@ -52,36 +52,23 @@ Migration should reduce maintenance burden, not create it.
 
 When you hit an edge case the library doesn't handle cleanly.
 
-### Raw YAML Passthrough
+### Complex PromQL Expressions
 
-For Prometheus config sections not yet typed:
-
-```go
-var CustomConfig = prometheus.RawConfig{
-    YAML: `
-some_new_section:
-  option: value
-`,
-}
-```
-
-### Raw PromQL Strings
-
-For complex expressions that are hard to build with typed constructors:
+For histogram quantiles and other complex expressions, use the typed builders:
 
 ```go
-var ComplexExpr = promql.Raw(`
-  histogram_quantile(0.99,
-    sum by (le, service) (
-      rate(http_request_duration_seconds_bucket[5m])
-    )
-  )
-`)
+// histogram_quantile(0.99, sum by (le, service) (rate(http_request_duration_seconds_bucket[5m])))
+var ComplexExpr = promql.Histogram_quantile(0.99,
+    promql.Sum(promql.Rate(
+        promql.Vector("http_request_duration_seconds_bucket"),
+        "5m",
+    ), "le", "service"),
+)
 ```
 
 ### Custom Grafana Panel Options
 
-For plugin-specific options:
+For plugin-specific options not covered by typed panels:
 
 ```go
 var CustomPanel = grafana.Panel{
@@ -90,6 +77,18 @@ var CustomPanel = grafana.Panel{
         "pluginSpecific": "value",
     },
 }
+```
+
+### Generated Output Post-Processing
+
+For configs the library doesn't yet support, generate what you can and merge with hand-written YAML:
+
+```bash
+# Generate typed configs
+wetwire-obs build . -o ./generated/
+
+# Merge with hand-written additions
+cat ./generated/prometheus.yml ./extras/prometheus-additions.yml > ./final/prometheus.yml
 ```
 
 ### When to File an Issue

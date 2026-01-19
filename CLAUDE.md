@@ -58,17 +58,7 @@ internal/       # discover, serialize, lint, importer
 
 ## Lint Rules
 
-Prefix: `WOB` (Wetwire OBservability)
-
-| Range | Category |
-|-------|----------|
-| WOB001-019 | Core wetwire patterns |
-| WOB020-049 | Prometheus config |
-| WOB050-079 | Alertmanager |
-| WOB080-099 | Alerting/recording rules |
-| WOB100-119 | PromQL patterns |
-| WOB120-149 | Grafana dashboards |
-| WOB200-219 | Security |
+Uses the `WOB` prefix (Wetwire OBservability). See [LINT_RULES.md](docs/LINT_RULES.md) for the complete rule reference with categories WOB001-WOB219.
 
 ## CLI Commands
 

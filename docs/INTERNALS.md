@@ -63,7 +63,22 @@ for _, scrape := range resources.ScrapeConfigs {
 
 ## Config Generation
 
-The builder constructs configuration files from discovered resources.
+The builder constructs configuration files from discovered resources through a three-stage pipeline.
+
+### Generation Pipeline
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Config Generation Pipeline                 │
+│                                                              │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────────┐  │
+│  │   DISCOVER  │ ─▶ │  SERIALIZE  │ ─▶ │     OUTPUT      │  │
+│  └─────────────┘    └─────────────┘    └─────────────────┘  │
+│                                                              │
+│  AST parsing        Convert structs    Write config files   │
+│  finds configs      to YAML/JSON                            │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ### Build Process
 
@@ -80,6 +95,42 @@ output, err := builder.Build(resources, builder.Options{
 // output.Rules - map[filename]content
 // output.Dashboards - map[filename]content
 ```
+
+### Type Mapping
+
+#### Prometheus
+
+| Go Type | YAML Output |
+|---------|-------------|
+| `prometheus.Config` | Root prometheus.yml |
+| `prometheus.ScrapeConfig` | `scrape_configs` entry |
+| `prometheus.StaticConfig` | `static_configs` entry |
+| `prometheus.RemoteWrite` | `remote_write` entry |
+
+#### Alertmanager
+
+| Go Type | YAML Output |
+|---------|-------------|
+| `alertmanager.Config` | Root alertmanager.yml |
+| `alertmanager.Route` | `route` section |
+| `alertmanager.Receiver` | `receivers` entry |
+
+#### Rules
+
+| Go Type | YAML Output |
+|---------|-------------|
+| `rules.AlertingRule` | Alert in rule group |
+| `rules.RecordingRule` | Recording rule in group |
+| `rules.RuleGroup` | Rule group file |
+
+#### Grafana
+
+| Go Type | JSON Output |
+|---------|-------------|
+| `grafana.Dashboard` | Dashboard JSON |
+| `grafana.StatPanel` | Panel with type "stat" |
+| `grafana.GraphPanel` | Panel with type "graph" |
+| `grafana.Row` | Row container |
 
 ### Dependency Resolution
 
@@ -189,6 +240,24 @@ case Both:
 
 ---
 
+## Row-Based Dashboard Layout
+
+Grafana panels are auto-positioned from row definitions:
+
+```go
+var Dashboard = grafana.Dashboard{
+    Title: "API Metrics",
+    Rows: []grafana.Row{
+        {Panels: []any{Panel1, Panel2}},  // Side by side, y=0
+        {Panels: []any{Panel3}},           // Full width, y=8
+    },
+}
+```
+
+The serializer calculates x/y positions automatically based on row index and panel count.
+
+---
+
 ## Linter Architecture
 
 The linter checks Go source for style issues and potential problems.
@@ -202,15 +271,7 @@ Each rule has:
 
 ### Rule Categories
 
-| Range | Category |
-|-------|----------|
-| WOB001-019 | Core wetwire patterns |
-| WOB020-049 | Prometheus config |
-| WOB050-079 | Alertmanager |
-| WOB080-099 | Alerting/recording rules |
-| WOB100-119 | PromQL patterns |
-| WOB120-149 | Grafana dashboards |
-| WOB200-219 | Security |
+See [LINT_RULES.md](LINT_RULES.md) for the complete rule reference with categories WOB001-WOB219.
 
 ### Key Rules
 

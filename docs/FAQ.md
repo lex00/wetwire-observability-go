@@ -8,9 +8,7 @@ This FAQ covers questions specific to the Go implementation of wetwire for Prome
 
 ### How do I install wetwire-obs?
 
-```bash
-go install github.com/lex00/wetwire-observability-go/cmd/wetwire-obs@latest
-```
+See the [README](../README.md#installation) for installation instructions.
 
 ### How do I create a new project?
 

@@ -2,6 +2,8 @@
 
 wetwire-observability-go includes lint rules (WOB prefix) to enforce best practices for Prometheus, Alertmanager, and Grafana configuration.
 
+**Note:** Some rules are planned but not yet implemented. Run `wetwire-obs lint --help` to see currently active rules.
+
 ## Quick Start
 
 ```bash
@@ -366,12 +368,6 @@ var SlackConfig = alertmanager.SlackConfig{
     APIURL: alertmanager.SecretRef("slack-webhook-url"),
 }
 ```
-
----
-
-## Note on Implementation
-
-Some lint rules are planned but not yet fully implemented. Check `wetwire-obs lint --help` for currently active rules.
 
 ---
 

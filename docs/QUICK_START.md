@@ -2,17 +2,7 @@
 
 Get started with `wetwire-obs` in 5 minutes.
 
-## Installation
-
-```bash
-go install github.com/lex00/wetwire-observability-go/cmd/wetwire-obs@latest
-```
-
-Or add to your project:
-
-```bash
-go get github.com/lex00/wetwire-observability-go
-```
+**Prerequisites:** Install the CLI per the [README](../README.md#installation).
 
 ---
 

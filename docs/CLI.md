@@ -9,8 +9,11 @@ The `wetwire-obs` command generates Prometheus, Alertmanager, and Grafana config
 | `wetwire-obs build` | Generate configuration files from Go source |
 | `wetwire-obs lint` | Lint code for issues |
 | `wetwire-obs init` | Initialize a new project |
+| `wetwire-obs import` | Convert existing configs to Go code |
 | `wetwire-obs validate` | Validate resources |
 | `wetwire-obs list` | List discovered resources |
+| `wetwire-obs design` | AI-assisted config design |
+| `wetwire-obs test` | Test with simulated personas |
 | `wetwire-obs mcp` | Start MCP server |
 
 ```bash
@@ -166,6 +169,45 @@ var Production = prometheus.PrometheusConfig{
 
 ---
 
+## import
+
+Convert existing Prometheus, Alertmanager, or Grafana configurations to Go code.
+
+```bash
+# Import Prometheus config
+wetwire-obs import prometheus.yml -o ./monitoring/
+
+# Import Alertmanager config
+wetwire-obs import alertmanager.yml -o ./monitoring/
+
+# Import Grafana dashboard
+wetwire-obs import dashboard.json -o ./monitoring/
+
+# Import rule files
+wetwire-obs import rules/*.yml -o ./monitoring/
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `FILE` | Configuration file to import |
+| `--output, -o DIR` | Output directory for generated Go files |
+| `--package, -p NAME` | Package name for generated code (default: monitoring) |
+
+### Supported Formats
+
+| Format | Description |
+|--------|-------------|
+| `prometheus.yml` | Prometheus configuration |
+| `alertmanager.yml` | Alertmanager configuration |
+| `*.json` | Grafana dashboard JSON |
+| `rules/*.yml` | Prometheus alert/recording rules |
+
+See [IMPORT_WORKFLOW.md](IMPORT_WORKFLOW.md) for detailed migration workflows.
+
+---
+
 ## validate
 
 Validate resources and check dependencies.
@@ -219,6 +261,52 @@ wetwire-obs mcp
 | `wetwire_lint` | Lint code for issues |
 | `wetwire_init` | Initialize a new project |
 | `wetwire_list` | List discovered resources |
+
+---
+
+## design
+
+Start an AI-assisted design session to create observability configurations.
+
+```bash
+# Interactive design session
+wetwire-obs design --provider anthropic "Create monitoring for a REST API"
+
+# Using Kiro provider
+wetwire-obs design --provider kiro "Create alerts for payment service"
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `PROMPT` | Description of what to create |
+| `--provider {anthropic,kiro}` | AI provider to use |
+| `--model MODEL` | Model to use (default: claude-sonnet-4) |
+
+See [OBSERVABILITY-KIRO-CLI.md](OBSERVABILITY-KIRO-CLI.md) for Kiro integration details.
+
+---
+
+## test
+
+Test configurations with simulated user personas.
+
+```bash
+# Test with expert persona
+wetwire-obs test --provider anthropic --persona expert "Create error rate alerts"
+
+# Test with novice persona
+wetwire-obs test --provider anthropic --persona novice "Set up monitoring"
+```
+
+### Options
+
+| Option | Description |
+|--------|-------------|
+| `PROMPT` | Test prompt to run |
+| `--provider {anthropic,kiro}` | AI provider to use |
+| `--persona {expert,novice,adversarial}` | User persona to simulate |
 
 ---
 

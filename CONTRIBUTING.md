@@ -56,14 +56,7 @@ chore: Update dependencies
 3. Add test case in `internal/lint/rules_test.go`
 4. Update docs/LINT_RULES.md with the new rule
 
-Lint rules use the `WOB` prefix (Wetwire OBservability):
-- WOB001-019: Core wetwire patterns
-- WOB020-049: Prometheus config
-- WOB050-079: Alertmanager
-- WOB080-099: Alerting/recording rules
-- WOB100-119: PromQL patterns
-- WOB120-149: Grafana dashboards
-- WOB200-219: Security
+Lint rules use the `WOB` prefix (Wetwire OBservability). See [docs/LINT_RULES.md](docs/LINT_RULES.md) for the complete rule reference and category ranges.
 
 ## Adding a New Resource Type
 
