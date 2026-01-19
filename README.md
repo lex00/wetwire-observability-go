@@ -79,14 +79,14 @@ wetwire-obs build . --mode=operator
 Create observability configuration interactively with AI:
 
 ```bash
-# Interactive design session
+# No API key required - uses Claude CLI
 wetwire-obs design "Add monitoring for my API service"
 
 # Automated testing with personas
 wetwire-obs test --persona beginner "Create error rate dashboard"
 ```
 
-Requires `ANTHROPIC_API_KEY`. See [CLI Reference](docs/CLI.md#design) for details.
+Uses [Claude CLI](https://claude.ai/download) by default (no API key required). Falls back to Anthropic API if Claude CLI is not installed. See [CLI Reference](docs/CLI.md#design) for details.
 
 ## Documentation
 

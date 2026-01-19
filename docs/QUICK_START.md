@@ -284,6 +284,17 @@ monitoring/
 
 ---
 
+## AI-Assisted Design
+
+Let AI help create your observability configuration:
+
+```bash
+# No API key required - uses Claude CLI
+wetwire-obs design "Add monitoring for my API service with error rate alerts and latency dashboards"
+```
+
+The design command creates Go code following wetwire patterns, runs linting, and builds the final configs.
+
 ## Next Steps
 
 - See the full [CLI Reference](CLI.md)
