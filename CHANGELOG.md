@@ -7,7 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-01-19
+
 ### Added
+- `examples/api-monitoring/` - Idiomatic example with shared PromQL expressions, alerts, recording rules, and Grafana dashboard
 - LintOpts.Fix support in domain Lint() - indicates auto-fix not yet implemented when fixable issues found
 - LintOpts.Disable support in domain Lint() - filters out specified rule IDs from lint results
 - Internal lint package with LintOptions, LintIssue, and LintResult types
