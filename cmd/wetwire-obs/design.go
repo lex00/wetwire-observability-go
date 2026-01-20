@@ -126,7 +126,8 @@ func runDesignKiro(systemPrompt, userPrompt string, timeout time.Duration) error
 	config := kiro.Config{
 		AgentName:   "wetwire-observability",
 		AgentPrompt: systemPrompt,
-		MCPCommand:  "wetwire-obs-mcp",
+		MCPCommand:  "wetwire-obs",
+		MCPArgs:     []string{"mcp"},
 	}
 
 	// Get working directory
