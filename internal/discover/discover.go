@@ -4,7 +4,6 @@ package discover
 import (
 	"go/parser"
 	"go/token"
-	"strings"
 
 	coreast "github.com/lex00/wetwire-core-go/ast"
 	corediscover "github.com/lex00/wetwire-core-go/discover"
@@ -44,6 +43,8 @@ type DiscoveryResult struct {
 	AlertingRules []*ResourceRef `json:"alerting_rules,omitempty"`
 	// RecordingRules are discovered recording rule resources.
 	RecordingRules []*ResourceRef `json:"recording_rules,omitempty"`
+	// Dashboards are discovered Grafana dashboard resources.
+	Dashboards []*ResourceRef `json:"dashboards,omitempty"`
 	// Errors encountered during discovery (non-fatal).
 	Errors []string `json:"errors,omitempty"`
 }
@@ -62,6 +63,8 @@ var observabilityTypes = map[string]bool{
 	"RuleGroup":     true,
 	"AlertingRule":  true,
 	"RecordingRule": true,
+	// Grafana types
+	"Dashboard": true,
 }
 
 // observabilityTypeMatcher creates a TypeMatcher for observability types.
@@ -133,6 +136,8 @@ func Discover(dir string) (*DiscoveryResult, error) {
 			result.AlertingRules = append(result.AlertingRules, ref)
 		case "RecordingRule":
 			result.RecordingRules = append(result.RecordingRules, ref)
+		case "Dashboard":
+			result.Dashboards = append(result.Dashboards, ref)
 		}
 	}
 
@@ -172,7 +177,8 @@ func (r *DiscoveryResult) TotalCount() int {
 		len(r.GlobalConfigs) + len(r.StaticConfigs) +
 		len(r.AlertmanagerConfigs) +
 		len(r.RulesFiles) + len(r.RuleGroups) +
-		len(r.AlertingRules) + len(r.RecordingRules)
+		len(r.AlertingRules) + len(r.RecordingRules) +
+		len(r.Dashboards)
 }
 
 // All returns all discovered resources as a flat slice.
@@ -187,6 +193,7 @@ func (r *DiscoveryResult) All() []*ResourceRef {
 	all = append(all, r.RuleGroups...)
 	all = append(all, r.AlertingRules...)
 	all = append(all, r.RecordingRules...)
+	all = append(all, r.Dashboards...)
 	return all
 }
 
@@ -199,12 +206,3 @@ func isExported(name string) bool {
 	return r >= 'A' && r <= 'Z'
 }
 
-// normalizeTypeName extracts the simple type name from a potentially qualified type.
-// e.g., "prometheus.PrometheusConfig" -> "PrometheusConfig"
-// This function is kept for backwards compatibility but is no longer used internally.
-func normalizeTypeName(typeName string) string {
-	if idx := strings.LastIndex(typeName, "."); idx != -1 {
-		return typeName[idx+1:]
-	}
-	return typeName
-}

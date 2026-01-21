@@ -99,9 +99,13 @@ func (l *Linter) lintResources(resources *discover.DiscoveryResult) (*LintResult
 		disabledSet[strings.ToUpper(rule)] = true
 	}
 
-	// Run lint rules on each resource
-	// TODO: Implement actual lint rules (WOB001-WOB219)
-	// For now, we have no implemented rules, so no issues will be reported
+	// Run lint rules on each resource type
+
+	// Lint Grafana dashboards (WOB120-149)
+	if len(resources.Dashboards) > 0 {
+		dashboardIssues := l.lintDashboards(resources.Dashboards)
+		result.Issues = append(result.Issues, dashboardIssues...)
+	}
 
 	// Filter out issues from disabled rules
 	filteredIssues := []LintIssue{}

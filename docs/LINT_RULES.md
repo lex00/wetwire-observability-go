@@ -34,6 +34,10 @@ wetwire-obs lint ./monitoring -f json
 | WOB101 | Validate PromQL syntax | error | PromQL |
 | WOB120 | Require dashboard title | error | Grafana |
 | WOB121 | Use row-based layout | warning | Grafana |
+| WOB122 | Require dashboard UID | warning | Grafana |
+| WOB123 | Require dashboard rows | warning | Grafana |
+| WOB124 | Require panel title | warning | Grafana |
+| WOB125 | Require panel target | warning | Grafana |
 | WOB200 | Detect hardcoded secrets | error | Security |
 
 ## Rule Categories
@@ -337,6 +341,64 @@ var Dashboard = grafana.Dashboard{
     Rows: []grafana.Row{
         {Panels: []any{Panel1, Panel2}},
     },
+}
+```
+
+---
+
+### WOB122: Require Dashboard UID
+
+**Description:** Dashboards should have a UID for stable identification.
+
+**Severity:** warning
+
+UIDs provide a stable identifier that doesn't change when the title changes.
+
+#### Bad
+
+```go
+var MyDashboard = grafana.Dashboard{
+    Title: "API Metrics",
+    Rows:  []grafana.Row{...},
+}
+```
+
+#### Good
+
+```go
+var MyDashboard = grafana.Dashboard{
+    UID:   "api-metrics",
+    Title: "API Metrics",
+    Rows:  []grafana.Row{...},
+}
+```
+
+---
+
+### WOB123: Require Dashboard Rows
+
+**Description:** Dashboards should have at least one row.
+
+**Severity:** warning
+
+An empty dashboard provides no value.
+
+#### Bad
+
+```go
+var MyDashboard = grafana.Dashboard{
+    Title: "API Metrics",
+    UID:   "api-metrics",
+}
+```
+
+#### Good
+
+```go
+var MyDashboard = grafana.Dashboard{
+    Title: "API Metrics",
+    UID:   "api-metrics",
+    Rows:  []*grafana.Row{&MetricsRow},
 }
 ```
 
