@@ -14,7 +14,7 @@ func importCmd(args []string) int {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
 	output := fs.String("output", "", "Output file path (default: stdout)")
 	pkg := fs.String("package", "monitoring", "Go package name for generated code")
-	configType := fs.String("type", "", "Config type: prometheus, alertmanager (auto-detected if not specified)")
+	configType := fs.String("type", "", "Config type: prometheus, alertmanager, dashboard (auto-detected if not specified)")
 	help := fs.Bool("help", false, "Show help")
 
 	fs.Usage = func() {
@@ -26,6 +26,7 @@ func importCmd(args []string) int {
 		fmt.Println("Supported formats:")
 		fmt.Println("  - prometheus.yml    (Prometheus configuration)")
 		fmt.Println("  - alertmanager.yml  (Alertmanager configuration)")
+		fmt.Println("  - *.json            (Grafana dashboard JSON)")
 		fmt.Println()
 		fmt.Println("Options:")
 		fs.PrintDefaults()
@@ -33,6 +34,7 @@ func importCmd(args []string) int {
 		fmt.Println("Examples:")
 		fmt.Println("  wetwire-obs import prometheus.yml --output monitoring/prometheus.go")
 		fmt.Println("  wetwire-obs import alertmanager.yml --output monitoring/alertmanager.go")
+		fmt.Println("  wetwire-obs import dashboard.json --output monitoring/dashboard.go")
 		fmt.Println("  wetwire-obs import config.yml --type=prometheus --package infra")
 	}
 
@@ -67,6 +69,8 @@ func importCmd(args []string) int {
 		code, err = importPrometheus(inputPath, *pkg)
 	case "alertmanager":
 		code, err = importAlertmanager(inputPath, *pkg)
+	case "dashboard":
+		code, err = importDashboard(inputPath, *pkg)
 	default:
 		fmt.Fprintf(os.Stderr, "Error: unknown config type %q. Use --type to specify.\n", detectedType)
 		return 1
@@ -110,6 +114,11 @@ func detectConfigType(path string) string {
 		return "prometheus"
 	}
 
+	// JSON files are likely Grafana dashboards
+	if strings.HasSuffix(base, ".json") {
+		return "dashboard"
+	}
+
 	// Default to prometheus for .yml files
 	if strings.HasSuffix(base, ".yml") || strings.HasSuffix(base, ".yaml") {
 		return "prometheus"
@@ -144,4 +153,18 @@ func importAlertmanager(inputPath, pkg string) ([]byte, error) {
 	}
 
 	return importer.GenerateAlertmanagerGoCode(config, pkg)
+}
+
+func importDashboard(inputPath, pkg string) ([]byte, error) {
+	dashboard, err := importer.ParseGrafanaDashboard(inputPath)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", inputPath, err)
+	}
+
+	warnings := importer.ValidateGrafanaDashboard(dashboard)
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
+	}
+
+	return importer.GenerateGrafanaGoCode(dashboard, pkg)
 }
