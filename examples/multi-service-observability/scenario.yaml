@@ -1,0 +1,72 @@
+name: multi_service_observability
+description: Complete observability stack for a microservices architecture with Prometheus scraping, Alertmanager routing, and Grafana dashboards
+
+prompts:
+  default: prompts/intermediate.md
+  personas:
+    - beginner
+    - intermediate
+    - expert
+  variants:
+    beginner: prompts/beginner.md
+    intermediate: prompts/intermediate.md
+    expert: prompts/expert.md
+
+domains:
+  - name: observability
+    cli: wetwire-obs
+    package: ./monitoring
+    outputs:
+      - prometheus.yml
+      - alertmanager.yml
+      - rules/*.yml
+      - dashboards/*.json
+
+services:
+  - name: api-gateway
+    description: Public-facing API gateway service
+    port: 8080
+    metrics_path: /metrics
+
+  - name: user-service
+    description: User management microservice
+    port: 8081
+    metrics_path: /metrics
+
+  - name: order-service
+    description: Order processing microservice
+    port: 8082
+    metrics_path: /metrics
+
+teams:
+  - name: platform
+    slack_channel: "#alerts-platform"
+    pagerduty: true
+
+  - name: backend
+    slack_channel: "#alerts-backend"
+    pagerduty: true
+
+  - name: sre
+    slack_channel: "#alerts-sre"
+    pagerduty: true
+
+validation:
+  observability:
+    resources:
+      min: 10
+    required_types:
+      - ScrapeConfig
+      - AlertingRule
+      - RecordingRule
+      - Dashboard
+      - Route
+      - Receiver
+
+tags:
+  - microservices
+  - prometheus
+  - alertmanager
+  - grafana
+  - slo
+  - multi-team
