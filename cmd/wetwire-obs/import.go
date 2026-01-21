@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/lex00/wetwire-observability-go/internal/importer"
 )
@@ -13,20 +14,28 @@ func importCmd(args []string) int {
 	fs := flag.NewFlagSet("import", flag.ExitOnError)
 	output := fs.String("output", "", "Output file path (default: stdout)")
 	pkg := fs.String("package", "monitoring", "Go package name for generated code")
+	configType := fs.String("type", "", "Config type: prometheus, alertmanager, dashboard (auto-detected if not specified)")
 	help := fs.Bool("help", false, "Show help")
 
 	fs.Usage = func() {
-		fmt.Println("wetwire-obs import - Convert prometheus.yml to Go code")
+		fmt.Println("wetwire-obs import - Convert config files to Go code")
 		fmt.Println()
 		fmt.Println("Usage:")
-		fmt.Println("  wetwire-obs import [options] <prometheus.yml>")
+		fmt.Println("  wetwire-obs import [options] <config-file>")
+		fmt.Println()
+		fmt.Println("Supported formats:")
+		fmt.Println("  - prometheus.yml    (Prometheus configuration)")
+		fmt.Println("  - alertmanager.yml  (Alertmanager configuration)")
+		fmt.Println("  - *.json            (Grafana dashboard JSON)")
 		fmt.Println()
 		fmt.Println("Options:")
 		fs.PrintDefaults()
 		fmt.Println()
-		fmt.Println("Example:")
-		fmt.Println("  wetwire-obs import prometheus.yml --output monitoring/config.go")
-		fmt.Println("  wetwire-obs import /etc/prometheus/prometheus.yml --package infra")
+		fmt.Println("Examples:")
+		fmt.Println("  wetwire-obs import prometheus.yml --output monitoring/prometheus.go")
+		fmt.Println("  wetwire-obs import alertmanager.yml --output monitoring/alertmanager.go")
+		fmt.Println("  wetwire-obs import dashboard.json --output monitoring/dashboard.go")
+		fmt.Println("  wetwire-obs import config.yml --type=prometheus --package infra")
 	}
 
 	if err := fs.Parse(args); err != nil {
@@ -46,32 +55,36 @@ func importCmd(args []string) int {
 
 	inputPath := fs.Arg(0)
 
-	// Parse the prometheus.yml
-	config, err := importer.ParsePrometheusConfig(inputPath)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error parsing %s: %v\n", inputPath, err)
+	// Auto-detect config type from filename if not specified
+	detectedType := *configType
+	if detectedType == "" {
+		detectedType = detectConfigType(inputPath)
+	}
+
+	var code []byte
+	var err error
+
+	switch detectedType {
+	case "prometheus":
+		code, err = importPrometheus(inputPath, *pkg)
+	case "alertmanager":
+		code, err = importAlertmanager(inputPath, *pkg)
+	case "dashboard":
+		code, err = importDashboard(inputPath, *pkg)
+	default:
+		fmt.Fprintf(os.Stderr, "Error: unknown config type %q. Use --type to specify.\n", detectedType)
 		return 1
 	}
 
-	// Validate and show warnings
-	warnings := importer.ValidatePrometheusConfig(config)
-	for _, w := range warnings {
-		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
-	}
-
-	// Generate Go code
-	code, err := importer.GenerateGoCode(config, *pkg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error generating code: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		return 1
 	}
 
 	// Output
 	if *output == "" {
-		// Write to stdout
 		fmt.Print(string(code))
 	} else {
-		// Create output directory if needed
 		dir := filepath.Dir(*output)
 		if dir != "." {
 			if err := os.MkdirAll(dir, 0755); err != nil {
@@ -80,7 +93,6 @@ func importCmd(args []string) int {
 			}
 		}
 
-		// Write to file
 		if err := os.WriteFile(*output, code, 0644); err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing %s: %v\n", *output, err)
 			return 1
@@ -89,4 +101,70 @@ func importCmd(args []string) int {
 	}
 
 	return 0
+}
+
+// detectConfigType guesses the config type from the filename.
+func detectConfigType(path string) string {
+	base := strings.ToLower(filepath.Base(path))
+
+	if strings.Contains(base, "alertmanager") {
+		return "alertmanager"
+	}
+	if strings.Contains(base, "prometheus") {
+		return "prometheus"
+	}
+
+	// JSON files are likely Grafana dashboards
+	if strings.HasSuffix(base, ".json") {
+		return "dashboard"
+	}
+
+	// Default to prometheus for .yml files
+	if strings.HasSuffix(base, ".yml") || strings.HasSuffix(base, ".yaml") {
+		return "prometheus"
+	}
+
+	return ""
+}
+
+func importPrometheus(inputPath, pkg string) ([]byte, error) {
+	config, err := importer.ParsePrometheusConfig(inputPath)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", inputPath, err)
+	}
+
+	warnings := importer.ValidatePrometheusConfig(config)
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
+	}
+
+	return importer.GenerateGoCode(config, pkg)
+}
+
+func importAlertmanager(inputPath, pkg string) ([]byte, error) {
+	config, err := importer.ParseAlertmanagerConfig(inputPath)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", inputPath, err)
+	}
+
+	warnings := importer.ValidateAlertmanagerConfig(config)
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
+	}
+
+	return importer.GenerateAlertmanagerGoCode(config, pkg)
+}
+
+func importDashboard(inputPath, pkg string) ([]byte, error) {
+	dashboard, err := importer.ParseGrafanaDashboard(inputPath)
+	if err != nil {
+		return nil, fmt.Errorf("parsing %s: %w", inputPath, err)
+	}
+
+	warnings := importer.ValidateGrafanaDashboard(dashboard)
+	for _, w := range warnings {
+		fmt.Fprintf(os.Stderr, "Warning: %s\n", w)
+	}
+
+	return importer.GenerateGrafanaGoCode(dashboard, pkg)
 }
