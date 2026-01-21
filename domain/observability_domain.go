@@ -138,6 +138,9 @@ func (b *observabilityBuilder) Build(ctx *Context, path string, opts BuildOpts) 
 	if len(resources.RecordingRules) > 0 {
 		outputData["recording_rules"] = resourceRefsToMap(resources.RecordingRules)
 	}
+	if len(resources.Dashboards) > 0 {
+		outputData["dashboards"] = resourceRefsToMap(resources.Dashboards)
+	}
 
 	// Format output
 	var jsonData []byte
@@ -434,6 +437,13 @@ func (l *observabilityLister) List(ctx *Context, path string, opts ListOpts) (*R
 		list = append(list, map[string]string{
 			"name": ref.Name,
 			"type": "recording_rule",
+			"file": ref.FilePath,
+		})
+	}
+	for _, ref := range resources.Dashboards {
+		list = append(list, map[string]string{
+			"name": ref.Name,
+			"type": "dashboard",
 			"file": ref.FilePath,
 		})
 	}
