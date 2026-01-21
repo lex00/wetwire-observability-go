@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	coredomain "github.com/lex00/wetwire-core-go/domain"
+	"github.com/lex00/wetwire-observability-go/internal/differ"
 	"github.com/lex00/wetwire-observability-go/internal/discover"
 	"github.com/lex00/wetwire-observability-go/internal/lint"
 	"github.com/spf13/cobra"
@@ -43,6 +44,7 @@ type ObservabilityDomain struct{}
 var (
 	_ coredomain.Domain       = (*ObservabilityDomain)(nil)
 	_ coredomain.ListerDomain = (*ObservabilityDomain)(nil)
+	_ coredomain.DifferDomain = (*ObservabilityDomain)(nil)
 )
 
 // Name returns "observability"
@@ -78,6 +80,11 @@ func (d *ObservabilityDomain) Validator() coredomain.Validator {
 // Lister returns the observability lister implementation
 func (d *ObservabilityDomain) Lister() coredomain.Lister {
 	return &observabilityLister{}
+}
+
+// Differ returns the observability differ implementation
+func (d *ObservabilityDomain) Differ() coredomain.Differ {
+	return differ.New()
 }
 
 // CreateRootCommand creates the root command using the domain interface.

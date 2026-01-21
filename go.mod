@@ -15,3 +15,5 @@ require (
 	github.com/spf13/pflag v1.0.9 // indirect
 	golang.org/x/sys v0.13.0 // indirect
 )
+
+replace github.com/lex00/wetwire-core-go => ../wetwire-core-go
