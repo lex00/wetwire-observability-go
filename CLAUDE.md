@@ -71,6 +71,29 @@ wetwire-obs list .               # Show resources
 wetwire-obs mcp                  # Start MCP server
 ```
 
+
+## Diff
+
+Compare Prometheus/Alertmanager configs semantically:
+
+```bash
+# Compare two files
+wetwire-obs diff file1 file2
+
+# JSON output for CI/CD
+wetwire-obs diff file1 file2 -f json
+
+# Ignore array ordering differences
+wetwire-obs diff file1 file2 --ignore-order
+```
+
+The diff command performs semantic comparison by resource name, detecting:
+- Added resources
+- Removed resources
+- Modified resources (with property-level change details)
+
+Exit code is 1 if differences are found, enabling CI pipeline validation.
+
 ## Related Documentation
 
 - [wetwire spec](https://github.com/lex00/wetwire/docs/WETWIRE_SPEC.md)
