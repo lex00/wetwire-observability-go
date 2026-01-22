@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "wetwire-obs": {
+      "command": "wetwire-obs",
+      "args": [
+        "mcp"
+      ]
+    }
+  }
+}

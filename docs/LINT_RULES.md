@@ -1,4 +1,7 @@
-# Lint Rules
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./wetwire-dark.svg">
+  <img src="./wetwire-light.svg" width="100" height="67">
+</picture>
 
 wetwire-observability-go includes lint rules (WOB prefix) to enforce best practices for Prometheus, Alertmanager, and Grafana configuration.
 

@@ -1,4 +1,7 @@
-# CLI Reference
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./wetwire-dark.svg">
+  <img src="./wetwire-light.svg" width="100" height="67">
+</picture>
 
 The `wetwire-obs` command generates Prometheus, Alertmanager, and Grafana configurations from Go code.
 

@@ -1,4 +1,7 @@
-# Import Workflow Documentation
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./wetwire-dark.svg">
+  <img src="./wetwire-light.svg" width="100" height="67">
+</picture>
 
 This document explains the import workflow used by wetwire-observability-go to convert existing Prometheus, Alertmanager, and Grafana configurations into Go code.
 
