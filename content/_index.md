@@ -4,6 +4,7 @@ title: "Wetwire Observability"
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/lex00/wetwire-observability-go.svg)](https://pkg.go.dev/github.com/lex00/wetwire-observability-go)
 [![CI](https://github.com/lex00/wetwire-observability-go/actions/workflows/ci.yml/badge.svg)](https://github.com/lex00/wetwire-observability-go/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/lex00/wetwire-observability-go/graph/badge.svg)](https://codecov.io/gh/lex00/wetwire-observability-go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Generate multi-backend observability configurations from Go structs with AI-assisted design.
