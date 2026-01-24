@@ -96,5 +96,6 @@ Exit code is 1 if differences are found, enabling CI pipeline validation.
 
 ## Related Documentation
 
-- [wetwire spec](https://github.com/lex00/wetwire/docs/WETWIRE_SPEC.md)
-- [Feature matrix](https://github.com/lex00/wetwire/docs/FEATURE_MATRIX.md)
+- [CLI Reference](content/cli.md)
+- [Quick Start](content/quick-start.md)
+- [Lint Rules](content/lint-rules.md)

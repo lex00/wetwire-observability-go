@@ -278,8 +278,8 @@ Start an AI-assisted design session to create observability configurations.
 # Interactive design session
 wetwire-obs design --provider anthropic "Create monitoring for a REST API"
 
-# Using Kiro provider
-wetwire-obs design --provider kiro "Create alerts for payment service"
+# Using different model
+wetwire-obs design --provider anthropic --model claude-opus-4 "Create alerts for payment service"
 ```
 
 ### Options
@@ -287,10 +287,8 @@ wetwire-obs design --provider kiro "Create alerts for payment service"
 | Option | Description |
 |--------|-------------|
 | `PROMPT` | Description of what to create |
-| `--provider {anthropic,kiro}` | AI provider to use |
+| `--provider anthropic` | AI provider to use |
 | `--model MODEL` | Model to use (default: claude-sonnet-4) |
-
-See [OBSERVABILITY-KIRO-CLI.md](OBSERVABILITY-KIRO-CLI.md) for Kiro integration details.
 
 ---
 
@@ -311,7 +309,7 @@ wetwire-obs test --provider anthropic --persona novice "Set up monitoring"
 | Option | Description |
 |--------|-------------|
 | `PROMPT` | Test prompt to run |
-| `--provider {anthropic,kiro}` | AI provider to use |
+| `--provider anthropic` | AI provider to use |
 | `--persona {expert,novice,adversarial}` | User persona to simulate |
 
 ---

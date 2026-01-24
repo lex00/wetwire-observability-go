@@ -1,29 +1,34 @@
 ---
-title: "Faq"
+title: "FAQ"
 ---
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./wetwire-dark.svg">
-  <img src="./wetwire-light.svg" width="100" height="67">
-</picture>
 
-This FAQ covers questions specific to the Go implementation of wetwire for Prometheus, Alertmanager, and Grafana. For general wetwire questions, see the [central FAQ](https://github.com/lex00/wetwire/blob/main/docs/FAQ.md).
+Frequently asked questions about wetwire-observability-go for Prometheus, Alertmanager, and Grafana configuration.
 
 ---
 
 ## Getting Started
 
-### How do I install wetwire-obs?
+<details>
+<summary>How do I install wetwire-obs?</summary>
 
-See the [README](../README.md#installation) for installation instructions.
+```bash
+go install github.com/lex00/wetwire-observability-go/cmd/wetwire-obs@latest
+```
 
-### How do I create a new project?
+See the [Quick Start]({{< relref "/quick-start" >}}) for complete setup instructions.
+</details>
+
+<details>
+<summary>How do I create a new project?</summary>
 
 ```bash
 wetwire-obs init my-monitoring
 cd my-monitoring
 ```
+</details>
 
-### How do I build configuration files?
+<details>
+<summary>How do I build configuration files?</summary>
 
 ```bash
 # Standalone configs
@@ -32,12 +37,64 @@ wetwire-obs build ./monitoring --mode=standalone
 # Prometheus Operator CRDs
 wetwire-obs build ./monitoring --mode=operator
 ```
+</details>
+
+---
+
+## Multi-Backend Support
+
+<details>
+<summary>How do I target multiple observability backends?</summary>
+
+Use the `--mode` flag to generate configurations for different backends from the same Go source:
+
+```bash
+# Generate standalone Prometheus/Alertmanager/Grafana configs
+wetwire-obs build ./monitoring --mode=standalone
+
+# Generate Prometheus Operator CRDs for Kubernetes
+wetwire-obs build ./monitoring --mode=operator
+
+# Generate both formats simultaneously
+wetwire-obs build ./monitoring --mode=both
+```
+
+The same Go struct definitions produce appropriate output for each backend:
+
+| Mode | Output |
+|------|--------|
+| `standalone` | prometheus.yml, alertmanager.yml, rules/*.yml, dashboards/*.json |
+| `operator` | ServiceMonitor, PrometheusRule, AlertmanagerConfig CRDs |
+</details>
+
+<details>
+<summary>Can I import existing dashboard configurations?</summary>
+
+Yes, use the `import` command to convert existing configurations to Go code:
+
+```bash
+# Import Prometheus config
+wetwire-obs import prometheus.yml -o ./monitoring/
+
+# Import Alertmanager config
+wetwire-obs import alertmanager.yml -o ./monitoring/
+
+# Import Grafana dashboard
+wetwire-obs import dashboard.json -o ./monitoring/
+
+# Import rule files
+wetwire-obs import rules/*.yml -o ./monitoring/
+```
+
+The importer converts YAML/JSON to typed Go structs, including PromQL expressions. See [Import Workflow]({{< relref "/import-workflow" >}}) for detailed migration workflows.
+</details>
 
 ---
 
 ## Syntax
 
-### How do I define a Prometheus scrape config?
+<details>
+<summary>How do I define a Prometheus scrape config?</summary>
 
 ```go
 var APIServer = prometheus.ScrapeConfig{
@@ -48,8 +105,10 @@ var APIServer = prometheus.ScrapeConfig{
     },
 }
 ```
+</details>
 
-### How do I create a PromQL expression?
+<details>
+<summary>How do I create a PromQL expression?</summary>
 
 Use the `promql` package builders:
 
@@ -63,8 +122,10 @@ expr := promql.Sum(promql.Rate(promql.Vector("http_requests_total"), "5m"), "ser
 // http_requests_total{status=~"5.."}
 expr := promql.Vector("http_requests_total", promql.Match("status", "5.."))
 ```
+</details>
 
-### How do I share PromQL expressions between alerts and dashboards?
+<details>
+<summary>How do I share PromQL expressions between alerts and dashboards?</summary>
 
 Define the expression as a variable and reference it:
 
@@ -81,8 +142,10 @@ var HighErrorRate = rules.AlertingRule{Expr: ErrorRateExpr}
 // Use in dashboard
 var Panel = grafana.StatPanel{Targets: []any{grafana.PrometheusTarget{Expr: ErrorRateExpr}}}
 ```
+</details>
 
-### How do I use Grafana variables in PromQL?
+<details>
+<summary>How do I use Grafana variables in PromQL?</summary>
 
 Use the standard Grafana variable syntax:
 
@@ -93,12 +156,14 @@ expr := promql.Rate(vector, "$__rate_interval")
 // Custom variables work too
 expr := promql.Vector("http_requests_total", promql.Match("service", "$service"))
 ```
+</details>
 
 ---
 
 ## Output Modes
 
-### What's the difference between standalone and operator mode?
+<details>
+<summary>What's the difference between standalone and operator mode?</summary>
 
 **Standalone mode** generates traditional config files:
 - `prometheus.yml` - Prometheus configuration
@@ -110,64 +175,91 @@ expr := promql.Vector("http_requests_total", promql.Match("service", "$service")
 - `ServiceMonitor` - Kubernetes-native scrape config
 - `PrometheusRule` - Kubernetes-native rules
 - `GrafanaDashboard` - Dashboard as ConfigMap
+</details>
 
-### Can I use both modes?
+<details>
+<summary>Can I use both modes?</summary>
 
 Yes:
 
 ```bash
 wetwire-obs build ./monitoring --mode=both
 ```
+</details>
 
 ---
 
-## Grafana Dashboards
+## Linting and Validation
 
-### How does panel auto-positioning work?
+<details>
+<summary>How does the linter help catch errors?</summary>
 
-Panels are automatically positioned based on row definitions:
+The linter enforces best practices and catches common mistakes before deployment:
 
-```go
-var Dashboard = grafana.Dashboard{
-    Rows: []grafana.Row{
-        {Panels: []any{Panel1, Panel2}},  // Side by side (50% each)
-        {Panels: []any{Panel3}},           // Full width below
-        {Panels: []any{P4, P5, P6}},       // Three panels (33% each)
-    },
-}
+```bash
+wetwire-obs lint ./monitoring
 ```
 
-### How do I set panel dimensions explicitly?
+Key checks include:
 
-Use the `GridPos` field:
+| Rule | Description |
+|------|-------------|
+| WOB022 | Require job_name in ScrapeConfig |
+| WOB080 | Require alert name |
+| WOB082 | Require severity label on alerts |
+| WOB101 | Validate PromQL syntax |
+| WOB120 | Require dashboard title |
+| WOB200 | Detect hardcoded secrets |
 
-```go
-var MyPanel = grafana.TimeseriesPanel{
-    Title: "Custom Size",
-    GridPos: grafana.GridPos{
-        X: 0, Y: 0,
-        W: 12, H: 8,  // Width 12 (half), Height 8
-    },
-}
-```
-
-### What panel types are supported?
-
-- `TimeseriesPanel` - Time series graphs
-- `StatPanel` - Single stat display
-- `GaugePanel` - Gauge visualization
-- `BarGaugePanel` - Bar gauge
-- `TablePanel` - Table view
-- `HeatmapPanel` - Heatmap
-- `PieChartPanel` - Pie chart
-- `LogsPanel` - Log viewer
-- `TextPanel` - Text/markdown
+The linter runs automatically during `wetwire-obs build` and can be integrated into CI/CD pipelines. See [Lint Rules]({{< relref "/lint-rules" >}}) for the complete rule reference.
+</details>
 
 ---
 
-## Alertmanager
+## Project Structure
 
-### How do I define alert receivers?
+<details>
+<summary>What's the recommended project structure?</summary>
+
+Organize by concern for maintainability:
+
+```
+monitoring/
+├── prometheus.go     # Global Prometheus config
+├── scrape.go         # Scrape configurations
+├── alerts.go         # Alerting rules
+├── recording.go      # Recording rules
+├── dashboards.go     # Grafana dashboards
+├── promql.go         # Shared PromQL expressions
+└── alertmanager.go   # Alertmanager config and receivers
+```
+
+Alternatively, organize by service:
+
+```
+monitoring/
+├── api/
+│   ├── scrape.go
+│   ├── alerts.go
+│   └── dashboard.go
+├── database/
+│   ├── scrape.go
+│   └── alerts.go
+└── shared/
+    └── promql.go
+```
+
+Both approaches work well. Choose based on team preference and project size.
+</details>
+
+---
+
+## Alert Routing
+
+<details>
+<summary>How do I handle alert routing?</summary>
+
+Define receivers and routes in Alertmanager configuration:
 
 ```go
 var SlackReceiver = alertmanager.Receiver{
@@ -186,11 +278,7 @@ var PagerDutyReceiver = alertmanager.Receiver{
         {ServiceKey: alertmanager.SecretRef("pagerduty-key")},
     },
 }
-```
 
-### How do I route alerts to different receivers?
-
-```go
 var AlertRouting = alertmanager.Route{
     Receiver: "default",
     Routes: []*alertmanager.Route{
@@ -206,34 +294,94 @@ var AlertRouting = alertmanager.Route{
 }
 ```
 
+Use `alertmanager.SecretRef()` for sensitive values like API keys and webhook URLs.
+</details>
+
+---
+
+## Grafana Dashboards
+
+<details>
+<summary>How does panel auto-positioning work?</summary>
+
+Panels are automatically positioned based on row definitions:
+
+```go
+var Dashboard = grafana.Dashboard{
+    Rows: []grafana.Row{
+        {Panels: []any{Panel1, Panel2}},  // Side by side (50% each)
+        {Panels: []any{Panel3}},           // Full width below
+        {Panels: []any{P4, P5, P6}},       // Three panels (33% each)
+    },
+}
+```
+</details>
+
+<details>
+<summary>How do I set panel dimensions explicitly?</summary>
+
+Use the `GridPos` field:
+
+```go
+var MyPanel = grafana.TimeseriesPanel{
+    Title: "Custom Size",
+    GridPos: grafana.GridPos{
+        X: 0, Y: 0,
+        W: 12, H: 8,  // Width 12 (half), Height 8
+    },
+}
+```
+</details>
+
+<details>
+<summary>What panel types are supported?</summary>
+
+- `TimeseriesPanel` - Time series graphs
+- `StatPanel` - Single stat display
+- `GaugePanel` - Gauge visualization
+- `BarGaugePanel` - Bar gauge
+- `TablePanel` - Table view
+- `HeatmapPanel` - Heatmap
+- `PieChartPanel` - Pie chart
+- `LogsPanel` - Log viewer
+- `TextPanel` - Text/markdown
+</details>
+
 ---
 
 ## Troubleshooting
 
-### "cannot find package" errors
+<details>
+<summary>"cannot find package" errors</summary>
 
 Ensure your `go.mod` has the correct dependencies:
 
 ```bash
 go mod tidy
 ```
+</details>
 
-### "undefined: prometheus" or similar import errors
+<details>
+<summary>"undefined: prometheus" or similar import errors</summary>
 
 Add the missing import:
 
 ```go
 import "github.com/lex00/wetwire-observability-go/prometheus"
 ```
+</details>
 
-### Build produces empty output
+<details>
+<summary>Build produces empty output</summary>
 
 Check that:
 1. Resources are declared as package-level `var` statements
 2. Resources have the correct type
 3. The package path is correct in the build command
+</details>
 
-### PromQL expression is invalid
+<details>
+<summary>PromQL expression is invalid</summary>
 
 Use the `promql` package builders instead of raw strings:
 
@@ -244,8 +392,10 @@ Expr: "rate(http_requests_total[5m])"
 // Good - type-safe builder
 Expr: promql.Rate(promql.Vector("http_requests_total"), "5m")
 ```
+</details>
 
-### Dashboard panels overlap
+<details>
+<summary>Dashboard panels overlap</summary>
 
 Use row-based layout or explicit `GridPos`:
 
@@ -258,12 +408,12 @@ Rows: []grafana.Row{
 // Or explicit positioning
 GridPos: grafana.GridPos{X: 0, Y: 0, W: 12, H: 8}
 ```
+</details>
 
 ---
 
 ## See Also
 
-- [Wetwire Specification](https://github.com/lex00/wetwire/blob/main/docs/WETWIRE_SPEC.md)
-- [CLI Reference](CLI.md)
-- [Quick Start](QUICK_START.md)
-- [Lint Rules](LINT_RULES.md)
+- [CLI Reference]({{< relref "/cli" >}})
+- [Quick Start]({{< relref "/quick-start" >}})
+- [Lint Rules]({{< relref "/lint-rules" >}})
